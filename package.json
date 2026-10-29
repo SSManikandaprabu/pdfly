@@ -1,0 +1,29 @@
+{
+  "name": "pdfly",
+  "version": "1.0.0",
+  "description": "Your PDFs never leave your device. Privacy-first, local in-browser PDF manipulation workspace.",
+  "main": "index.html",
+  "scripts": {
+    "test": "node test-all-processors.js",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "pdf",
+    "privacy-first",
+    "client-side",
+    "pdf-merger",
+    "pdf-compressor",
+    "pdf-encrypt",
+    "watermark",
+    "digital-signature",
+    "pdf-tools",
+    "offline-pdf"
+  ],
+  "author": "S S MANIKANDA PRABU",
+  "license": "MIT",
+  "dependencies": {
+    "@pdfsmaller/pdf-encrypt-lite": "^1.2.0",
+    "jszip": "^3.10.2",
+    "pdf-lib": "^1.17.1"
+  }
+}
