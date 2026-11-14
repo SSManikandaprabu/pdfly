@@ -27,13 +27,41 @@ function getDefaultConfig() {
   };
 }
 
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function pruneDailyStats(dailyObj) {
+  const out = {};
+  const src = dailyObj && typeof dailyObj === 'object' ? dailyObj : {};
+  const keys = Object.keys(src).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().slice(-14);
+  for (const k of keys) {
+    const entry = src[k] && typeof src[k] === 'object' ? src[k] : {};
+    out[k] = {
+      views: Number(entry.views) || 0,
+      operations: Number(entry.operations) || 0,
+      bytesSaved: Number(entry.bytesSaved) || 0
+    };
+  }
+  return out;
+}
+
 function getDefaultStats() {
   return {
     totalOperations: 0,
     totalBytesProcessed: 0,
     totalBytesSaved: 0,
     pageViews: 0,
+    toolOpens: 0,
+    totalShares: 0,
+    totalPresetClicks: 0,
     toolUsage: {},
+    presetUsage: {},
+    shareStats: {},
+    deviceStats: { desktop: 0, mobile: 0, tablet: 0 },
+    langStats: { en: 0, hi: 0, ta: 0 },
+    countryStats: {},
+    dailyStats: {},
     recentEvents: []
   };
 }
@@ -61,6 +89,8 @@ function normalizeState(raw) {
   const st = s.stats && typeof s.stats === 'object' ? s.stats : {};
   const ann = cfg.announcement && typeof cfg.announcement === 'object' ? cfg.announcement : {};
   const kv = s.kvConfig && typeof s.kvConfig === 'object' ? s.kvConfig : {};
+  const dev = st.deviceStats && typeof st.deviceStats === 'object' ? st.deviceStats : {};
+  const lng = st.langStats && typeof st.langStats === 'object' ? st.langStats : {};
 
   return {
     passcodeHash: typeof s.passcodeHash === 'string' && s.passcodeHash.length === 64 ? s.passcodeHash : def.passcodeHash,
@@ -83,7 +113,24 @@ function normalizeState(raw) {
       totalBytesProcessed: Number(st.totalBytesProcessed) || 0,
       totalBytesSaved: Number(st.totalBytesSaved) || 0,
       pageViews: Number(st.pageViews) || 0,
+      toolOpens: Number(st.toolOpens) || 0,
+      totalShares: Number(st.totalShares) || 0,
+      totalPresetClicks: Number(st.totalPresetClicks) || 0,
       toolUsage: st.toolUsage && typeof st.toolUsage === 'object' ? st.toolUsage : {},
+      presetUsage: st.presetUsage && typeof st.presetUsage === 'object' ? st.presetUsage : {},
+      shareStats: st.shareStats && typeof st.shareStats === 'object' ? st.shareStats : {},
+      deviceStats: {
+        desktop: Number(dev.desktop) || 0,
+        mobile: Number(dev.mobile) || 0,
+        tablet: Number(dev.tablet) || 0
+      },
+      langStats: {
+        en: Number(lng.en) || 0,
+        hi: Number(lng.hi) || 0,
+        ta: Number(lng.ta) || 0
+      },
+      countryStats: st.countryStats && typeof st.countryStats === 'object' ? st.countryStats : {},
+      dailyStats: pruneDailyStats(st.dailyStats),
       recentEvents: Array.isArray(st.recentEvents) ? st.recentEvents.slice(0, 50) : []
     },
     kvConfig: {
@@ -262,6 +309,38 @@ function verifyPasscode(inputPasscode, state) {
   return false;
 }
 
+function detectDevice(req, queryDevice) {
+  if (['mobile', 'tablet', 'desktop'].includes(queryDevice)) {
+    return queryDevice;
+  }
+  const ua = String(req?.headers?.['user-agent'] || '').toLowerCase();
+  if (/ipad|tablet|playbook|silk|(android(?!.*mobi))/i.test(ua)) return 'tablet';
+  if (/mobi|iphone|ipod|android|blackberry|iemobile|opera mini/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+function detectCountry(req) {
+  const code = String(req?.headers?.['x-vercel-ip-country'] || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(code) ? code : 'LOCAL';
+}
+
+function bumpDaily(stats, dateKey, field, delta) {
+  if (!stats.dailyStats || typeof stats.dailyStats !== 'object') stats.dailyStats = {};
+  if (!stats.dailyStats[dateKey]) {
+    stats.dailyStats[dateKey] = { views: 0, operations: 0, bytesSaved: 0 };
+  }
+  stats.dailyStats[dateKey][field] = (Number(stats.dailyStats[dateKey][field]) || 0) + delta;
+  stats.dailyStats = pruneDailyStats(stats.dailyStats);
+}
+
+function prependRecentEvent(stats, eventObj) {
+  if (!Array.isArray(stats.recentEvents)) stats.recentEvents = [];
+  stats.recentEvents.unshift(eventObj);
+  if (stats.recentEvents.length > 50) {
+    stats.recentEvents = stats.recentEvents.slice(0, 50);
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -278,11 +357,19 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       const action = query.action || 'public';
+      const today = getTodayKey();
+      const device = detectDevice(req, query.device);
+      const lang = ['en', 'hi', 'ta'].includes(query.lang) ? query.lang : 'en';
+      const country = detectCountry(req);
 
       if (action === 'public') {
         let storageMeta = getStorageStatus(state);
         if (query.trackView === '1') {
           state.stats.pageViews = (Number(state.stats.pageViews) || 0) + 1;
+          state.stats.deviceStats[device] = (Number(state.stats.deviceStats[device]) || 0) + 1;
+          state.stats.langStats[lang] = (Number(state.stats.langStats[lang]) || 0) + 1;
+          state.stats.countryStats[country] = (Number(state.stats.countryStats[country]) || 0) + 1;
+          bumpDaily(state.stats, today, 'views', 1);
           const saved = await saveState(state);
           storageMeta = { storageMode: saved.storageMode, kvConfigured: saved.kvConfigured };
         }
@@ -299,25 +386,63 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'track') {
-        const toolId = String(query.tool || 'unknown').slice(0, 64);
+        const eventType = ['operation', 'tool-open', 'preset', 'share'].includes(query.type) ? query.type : 'operation';
+        const targetId = String(query.target || query.tool || 'unknown').slice(0, 64);
         const bytes = Math.max(0, Number(query.bytes) || 0);
         const savedBytes = Math.max(0, Number(query.saved) || 0);
-        const lang = ['en', 'hi', 'ta'].includes(query.lang) ? query.lang : 'en';
 
-        state.stats.totalOperations = (Number(state.stats.totalOperations) || 0) + 1;
-        state.stats.totalBytesProcessed = (Number(state.stats.totalBytesProcessed) || 0) + bytes;
-        state.stats.totalBytesSaved = (Number(state.stats.totalBytesSaved) || 0) + savedBytes;
-        state.stats.toolUsage[toolId] = (Number(state.stats.toolUsage[toolId]) || 0) + 1;
-        state.stats.recentEvents.unshift({
-          id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          timestamp: new Date().toISOString(),
-          toolId,
-          bytes,
-          savedBytes,
-          lang
-        });
-        if (state.stats.recentEvents.length > 50) {
-          state.stats.recentEvents = state.stats.recentEvents.slice(0, 50);
+        if (eventType === 'operation') {
+          state.stats.totalOperations = (Number(state.stats.totalOperations) || 0) + 1;
+          state.stats.totalBytesProcessed = (Number(state.stats.totalBytesProcessed) || 0) + bytes;
+          state.stats.totalBytesSaved = (Number(state.stats.totalBytesSaved) || 0) + savedBytes;
+          state.stats.toolUsage[targetId] = (Number(state.stats.toolUsage[targetId]) || 0) + 1;
+          state.stats.deviceStats[device] = (Number(state.stats.deviceStats[device]) || 0) + 1;
+          state.stats.langStats[lang] = (Number(state.stats.langStats[lang]) || 0) + 1;
+          state.stats.countryStats[country] = (Number(state.stats.countryStats[country]) || 0) + 1;
+          bumpDaily(state.stats, today, 'operations', 1);
+          bumpDaily(state.stats, today, 'bytesSaved', savedBytes);
+          prependRecentEvent(state.stats, {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: new Date().toISOString(),
+            eventType: 'operation',
+            toolId: targetId,
+            bytes,
+            savedBytes,
+            lang,
+            device,
+            country
+          });
+        } else if (eventType === 'tool-open') {
+          state.stats.toolOpens = (Number(state.stats.toolOpens) || 0) + 1;
+          state.stats.deviceStats[device] = (Number(state.stats.deviceStats[device]) || 0) + 1;
+        } else if (eventType === 'preset') {
+          state.stats.totalPresetClicks = (Number(state.stats.totalPresetClicks) || 0) + 1;
+          state.stats.presetUsage[targetId] = (Number(state.stats.presetUsage[targetId]) || 0) + 1;
+          prependRecentEvent(state.stats, {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: new Date().toISOString(),
+            eventType: 'preset',
+            toolId: targetId,
+            bytes: 0,
+            savedBytes: 0,
+            lang,
+            device,
+            country
+          });
+        } else if (eventType === 'share') {
+          state.stats.totalShares = (Number(state.stats.totalShares) || 0) + 1;
+          state.stats.shareStats[targetId] = (Number(state.stats.shareStats[targetId]) || 0) + 1;
+          prependRecentEvent(state.stats, {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            timestamp: new Date().toISOString(),
+            eventType: 'share',
+            toolId: targetId,
+            bytes: 0,
+            savedBytes: 0,
+            lang,
+            device,
+            country
+          });
         }
 
         await saveState(state);

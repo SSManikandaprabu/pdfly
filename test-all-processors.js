@@ -213,8 +213,8 @@ async function testAll() {
   if (!mainScript.includes('function openShareModal') || !mainScript.includes('function shareOutputFile')) {
     throw new Error('Share workflow functions (openShareModal / shareOutputFile) missing from main script');
   }
-  if (!mainScript.includes('function syncWithCloudAdmin') || !mainScript.includes('function trackAdminOperation')) {
-    throw new Error('Cloud Admin sync functions (syncWithCloudAdmin / trackAdminOperation) missing from main script');
+  if (!mainScript.includes('function syncWithCloudAdmin') || !mainScript.includes('function trackAdminOperation') || !mainScript.includes('function trackAnalyticsEvent')) {
+    throw new Error('Cloud Admin sync & analytics helpers (syncWithCloudAdmin / trackAdminOperation / trackAnalyticsEvent) missing from main script');
   }
   console.log(
     `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, share & cloud sync helpers, and all ${expectedReadyTools.length} ready tools present`
@@ -244,6 +244,10 @@ async function testAll() {
       new nodeVm.Script(code);
       adminScriptCount++;
     }
+  }
+
+  if (!adminHtml.includes('function exportAnalyticsCsv')) {
+    throw new Error('Analytics CSV exporter (exportAnalyticsCsv) missing from admin.html');
   }
 
   const adminHandler = require('./api/admin.js');
@@ -276,9 +280,21 @@ async function testAll() {
   assert.strictEqual(pubRes.statusCode, 200);
   assert.strictEqual(pubRes.body.ok, true);
 
-  const trackRes = await invokeMock('GET', '/api/admin?action=track&tool=merge-pdf&bytes=4096&saved=1024&lang=en');
+  const trackRes = await invokeMock('GET', '/api/admin?action=track&tool=merge-pdf&bytes=4096&saved=1024&lang=en&device=desktop');
   assert.strictEqual(trackRes.statusCode, 200);
   assert.strictEqual(trackRes.body.ok, true);
+
+  const openTrackRes = await invokeMock('GET', '/api/admin?action=track&type=tool-open&target=compress-pdf&device=mobile&lang=hi');
+  assert.strictEqual(openTrackRes.statusCode, 200);
+  assert.strictEqual(openTrackRes.body.ok, true);
+
+  const presetTrackRes = await invokeMock('GET', '/api/admin?action=track&type=preset&target=aadhaar-100kb&device=mobile&lang=en');
+  assert.strictEqual(presetTrackRes.statusCode, 200);
+  assert.strictEqual(presetTrackRes.body.ok, true);
+
+  const shareTrackRes = await invokeMock('GET', '/api/admin?action=track&type=share&target=whatsapp&device=mobile&lang=en');
+  assert.strictEqual(shareTrackRes.statusCode, 200);
+  assert.strictEqual(shareTrackRes.body.ok, true);
 
   const badAuthRes = await invokeMock('POST', '/api/admin', { action: 'login', passcode: 'wrongpass' });
   assert.strictEqual(badAuthRes.statusCode, 401);
@@ -288,6 +304,13 @@ async function testAll() {
   assert.strictEqual(loginRes.statusCode, 200);
   assert.strictEqual(loginRes.body.ok, true);
   assert.ok(loginRes.body.stats.totalOperations >= 1, 'Expected tracked operation count >= 1');
+  assert.ok(loginRes.body.stats.toolOpens >= 1, 'Expected tracked toolOpens count >= 1');
+  assert.ok(loginRes.body.stats.totalPresetClicks >= 1, 'Expected tracked preset click count >= 1');
+  assert.ok((loginRes.body.stats.presetUsage['aadhaar-100kb'] || 0) >= 1, 'Expected aadhaar-100kb preset usage >= 1');
+  assert.ok(loginRes.body.stats.totalShares >= 1, 'Expected tracked share count >= 1');
+  assert.ok((loginRes.body.stats.shareStats.whatsapp || 0) >= 1, 'Expected whatsapp share count >= 1');
+  const todayKey = new Date().toISOString().slice(0, 10);
+  assert.ok((loginRes.body.stats.dailyStats[todayKey]?.operations || 0) >= 1, 'Expected dailyStats operation count >= 1');
 
   const saveRes = await invokeMock('POST', '/api/admin', {
     action: 'saveConfig',

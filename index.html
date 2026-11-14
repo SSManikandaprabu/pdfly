@@ -77,6 +77,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vercel Web Analytics (privacy-friendly aggregate counts) -->
+  <script defer src="/_vercel/insights/script.js"></script>
 
   <style>
     :root {
@@ -1438,6 +1440,7 @@
     function launchTool(toolId, initialFiles = []) {
       const tool = TOOL_CATALOG.find(t => t.id === toolId);
       if (!tool) return;
+      trackAnalyticsEvent('tool-open', { tool: toolId });
 
       activeTool = tool;
       document.getElementById('homeView').classList.add('hidden');
@@ -3145,6 +3148,7 @@
 
     // Presets Launcher
     function launchPreset(presetType) {
+      trackAnalyticsEvent('preset', { target: presetType });
       const ov = window.PDFLY_ADMIN_CONFIG?.presetOverrides?.[presetType];
       const presetTarget = Number(ov?.targetKb);
       const applyTargetKb = (defaultKb) => {
@@ -3289,6 +3293,7 @@
     }
 
     function copyShareLink() {
+      trackAnalyticsEvent('share', { target: 'copy-link' });
       const input = document.getElementById('shareUrlInput');
       const url = (input && input.value) || getSharePayload().url;
       const btn = document.getElementById('copyShareUrlBtn');
@@ -3313,6 +3318,7 @@
     function shareViaChannel(channel) {
       const { title, text, url } = getSharePayload();
       if (channel === 'email') {
+        trackAnalyticsEvent('share', { target: 'email' });
         window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text + '\n\n' + url)}`;
         return;
       }
@@ -3323,6 +3329,7 @@
         linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
       };
       if (urls[channel]) {
+        trackAnalyticsEvent('share', { target: channel });
         window.open(urls[channel], '_blank', 'noopener,noreferrer');
       }
     }
@@ -3332,6 +3339,7 @@
       if (navigator.share) {
         try {
           await navigator.share({ title, text, url });
+          trackAnalyticsEvent('share', { target: 'native' });
           return;
         } catch (err) {
           if (err && err.name === 'AbortError') return;
@@ -3352,6 +3360,7 @@
               title: lastGeneratedFilename || 'PDFly Document',
               text: 'Processed locally with PDFly (https://pdfly-five.vercel.app)'
             });
+            trackAnalyticsEvent('share', { target: 'output-file' });
             return;
           }
         } catch (err) {
@@ -3541,36 +3550,86 @@
       renderToolGrid();
     }
 
-    function trackAdminOperation(toolId, bytes, savedBytes) {
+    function getClientDevice() {
+      if (window.innerWidth < 768) return 'mobile';
+      if (window.innerWidth < 1024) return 'tablet';
+      return 'desktop';
+    }
+
+    function updateLocalAnalyticsStats(eventType, detail = {}) {
       const lang = localStorage.getItem('pdfly_lang') || 'en';
+      const device = getClientDevice();
+      const today = new Date().toISOString().slice(0, 10);
       try {
         const stats = JSON.parse(localStorage.getItem('pdfly_local_stats') || '{}');
-        stats.totalOperations = (Number(stats.totalOperations) || 0) + 1;
-        stats.totalBytesProcessed = (Number(stats.totalBytesProcessed) || 0) + (Number(bytes) || 0);
-        stats.totalBytesSaved = (Number(stats.totalBytesSaved) || 0) + (Number(savedBytes) || 0);
+        stats.deviceStats = stats.deviceStats && typeof stats.deviceStats === 'object' ? stats.deviceStats : { desktop: 0, mobile: 0, tablet: 0 };
+        stats.langStats = stats.langStats && typeof stats.langStats === 'object' ? stats.langStats : { en: 0, hi: 0, ta: 0 };
+        stats.dailyStats = stats.dailyStats && typeof stats.dailyStats === 'object' ? stats.dailyStats : {};
+        if (!stats.dailyStats[today]) stats.dailyStats[today] = { views: 0, operations: 0, bytesSaved: 0 };
         stats.toolUsage = stats.toolUsage && typeof stats.toolUsage === 'object' ? stats.toolUsage : {};
-        stats.toolUsage[toolId] = (Number(stats.toolUsage[toolId]) || 0) + 1;
+        stats.presetUsage = stats.presetUsage && typeof stats.presetUsage === 'object' ? stats.presetUsage : {};
+        stats.shareStats = stats.shareStats && typeof stats.shareStats === 'object' ? stats.shareStats : {};
         stats.recentEvents = Array.isArray(stats.recentEvents) ? stats.recentEvents : [];
-        stats.recentEvents.unshift({
-          id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          timestamp: new Date().toISOString(),
-          toolId,
-          bytes: Number(bytes) || 0,
-          savedBytes: Number(savedBytes) || 0,
-          lang
-        });
+
+        if (eventType === 'view') {
+          stats.pageViews = (Number(stats.pageViews) || 0) + 1;
+          stats.dailyStats[today].views = (Number(stats.dailyStats[today].views) || 0) + 1;
+          stats.deviceStats[device] = (Number(stats.deviceStats[device]) || 0) + 1;
+          stats.langStats[lang] = (Number(stats.langStats[lang]) || 0) + 1;
+        } else if (eventType === 'operation') {
+          const toolId = detail.tool || 'unknown';
+          const bytes = Math.max(0, Number(detail.bytes) || 0);
+          const savedBytes = Math.max(0, Number(detail.savedBytes) || 0);
+          stats.totalOperations = (Number(stats.totalOperations) || 0) + 1;
+          stats.totalBytesProcessed = (Number(stats.totalBytesProcessed) || 0) + bytes;
+          stats.totalBytesSaved = (Number(stats.totalBytesSaved) || 0) + savedBytes;
+          stats.toolUsage[toolId] = (Number(stats.toolUsage[toolId]) || 0) + 1;
+          stats.deviceStats[device] = (Number(stats.deviceStats[device]) || 0) + 1;
+          stats.langStats[lang] = (Number(stats.langStats[lang]) || 0) + 1;
+          stats.dailyStats[today].operations = (Number(stats.dailyStats[today].operations) || 0) + 1;
+          stats.dailyStats[today].bytesSaved = (Number(stats.dailyStats[today].bytesSaved) || 0) + savedBytes;
+          stats.recentEvents.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), eventType: 'operation', toolId, bytes, savedBytes, lang, device, country: 'LOCAL' });
+        } else if (eventType === 'tool-open') {
+          stats.toolOpens = (Number(stats.toolOpens) || 0) + 1;
+          stats.deviceStats[device] = (Number(stats.deviceStats[device]) || 0) + 1;
+        } else if (eventType === 'preset') {
+          const target = detail.target || 'unknown';
+          stats.totalPresetClicks = (Number(stats.totalPresetClicks) || 0) + 1;
+          stats.presetUsage[target] = (Number(stats.presetUsage[target]) || 0) + 1;
+          stats.recentEvents.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), eventType: 'preset', toolId: target, bytes: 0, savedBytes: 0, lang, device, country: 'LOCAL' });
+        } else if (eventType === 'share') {
+          const target = detail.target || 'copy-link';
+          stats.totalShares = (Number(stats.totalShares) || 0) + 1;
+          stats.shareStats[target] = (Number(stats.shareStats[target]) || 0) + 1;
+          stats.recentEvents.unshift({ id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, timestamp: new Date().toISOString(), eventType: 'share', toolId: target, bytes: 0, savedBytes: 0, lang, device, country: 'LOCAL' });
+        }
+
         stats.recentEvents = stats.recentEvents.slice(0, 50);
         localStorage.setItem('pdfly_local_stats', JSON.stringify(stats));
       } catch (e) {}
+    }
 
+    function trackAnalyticsEvent(eventType, detail = {}) {
+      const lang = localStorage.getItem('pdfly_lang') || 'en';
+      const device = getClientDevice();
+      updateLocalAnalyticsStats(eventType, detail);
+
+      if (eventType === 'view') return;
       const qs = new URLSearchParams({
         action: 'track',
-        tool: toolId || 'unknown',
-        bytes: String(Math.max(0, Number(bytes) || 0)),
-        saved: String(Math.max(0, Number(savedBytes) || 0)),
-        lang
+        type: eventType,
+        target: detail.target || detail.tool || 'unknown',
+        tool: detail.tool || detail.target || 'unknown',
+        bytes: String(Math.max(0, Number(detail.bytes) || 0)),
+        saved: String(Math.max(0, Number(detail.savedBytes) || 0)),
+        lang,
+        device
       });
       originalFetch(`/api/admin?${qs.toString()}`, { method: 'GET' }).catch(() => {});
+    }
+
+    function trackAdminOperation(toolId, bytes, savedBytes) {
+      trackAnalyticsEvent('operation', { tool: toolId, bytes, savedBytes });
     }
 
     async function syncWithCloudAdmin() {
@@ -3579,8 +3638,12 @@
         if (cached) applyCloudAdminConfig(cached);
       } catch (e) {}
 
+      const lang = localStorage.getItem('pdfly_lang') || 'en';
+      const device = getClientDevice();
+      updateLocalAnalyticsStats('view');
+
       try {
-        const resp = await originalFetch('/api/admin?action=public&trackView=1', { method: 'GET' });
+        const resp = await originalFetch(`/api/admin?action=public&trackView=1&device=${encodeURIComponent(device)}&lang=${encodeURIComponent(lang)}`, { method: 'GET' });
         if (!resp.ok) return;
         const data = await resp.json();
         if (data && data.ok && data.config) {

@@ -151,21 +151,63 @@
 
     <!-- TAB 1: OVERVIEW & ANALYTICS -->
     <section id="tab-overview" class="tab-panel space-y-6">
+      <!-- Analytics Actions Toolbar -->
+      <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div>
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Executive Analytics Dashboard</h2>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Zero-document-upload telemetry across tools, presets, shares &amp; visitors.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+            <input id="autoRefreshToggle" type="checkbox" onchange="toggleAutoRefresh(this.checked)" class="w-3.5 h-3.5 rounded text-purple-600">
+            <span>Auto-Refresh (15s)</span>
+          </label>
+          <button onclick="exportAnalyticsCsv()" class="px-3 py-1.5 rounded-xl border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export CSV
+          </button>
+          <button onclick="refreshDashboard()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+          </button>
+          <button onclick="resetCloudStats()" class="px-3 py-1.5 rounded-xl border border-rose-500/35 bg-rose-500/10 text-xs font-bold text-rose-600 dark:text-rose-300 hover:bg-rose-500/20">Reset Stats</button>
+        </div>
+      </div>
+
+      <!-- 8 KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-3xl border border-indigo-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
           <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Total PDF Operations</div>
           <div id="kpiTotalOps" class="text-3xl font-black font-mono-numbers text-slate-900 dark:text-white mt-2">0</div>
-          <div class="text-[11px] text-indigo-500 dark:text-indigo-300 mt-1 font-medium">Anonymous event counter</div>
+          <div class="text-[11px] text-indigo-500 dark:text-indigo-300 mt-1 font-medium">Completed PDF jobs</div>
         </div>
         <div class="rounded-3xl border border-emerald-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
           <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Size Reduced</div>
           <div id="kpiBytesSaved" class="text-3xl font-black font-mono-numbers text-emerald-600 dark:text-emerald-400 mt-2">0 KB</div>
-          <div class="text-[11px] text-emerald-600 dark:text-emerald-300 mt-1 font-medium">Cumulative user bandwidth saved</div>
+          <div id="kpiAvgSavingsPct" class="text-[11px] text-emerald-600 dark:text-emerald-300 mt-1 font-medium">0% avg reduction</div>
         </div>
         <div class="rounded-3xl border border-cyan-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
           <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Workspace Views</div>
           <div id="kpiPageViews" class="text-3xl font-black font-mono-numbers text-sky-600 dark:text-sky-400 mt-2">0</div>
           <div class="text-[11px] text-sky-600 dark:text-sky-300 mt-1 font-medium">Synced via /api/admin</div>
+        </div>
+        <div class="rounded-3xl border border-violet-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Tool Conversion Rate</div>
+          <div id="kpiConversionRate" class="text-3xl font-black font-mono-numbers text-violet-600 dark:text-violet-400 mt-2">0%</div>
+          <div id="kpiToolOpens" class="text-[11px] text-violet-600 dark:text-violet-300 mt-1 font-medium">0 tool opens</div>
+        </div>
+        <div class="rounded-3xl border border-amber-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">India-First Preset Clicks</div>
+          <div id="kpiPresetClicks" class="text-3xl font-black font-mono-numbers text-amber-600 dark:text-amber-400 mt-2">0</div>
+          <div class="text-[11px] text-amber-600 dark:text-amber-300 mt-1 font-medium">Aadhaar, PAN, Resume &amp; UPSC</div>
+        </div>
+        <div class="rounded-3xl border border-pink-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Viral Shares &amp; Copies</div>
+          <div id="kpiTotalShares" class="text-3xl font-black font-mono-numbers text-pink-600 dark:text-pink-400 mt-2">0</div>
+          <div class="text-[11px] text-pink-600 dark:text-pink-300 mt-1 font-medium">WhatsApp, native &amp; link copies</div>
+        </div>
+        <div class="rounded-3xl border border-teal-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Top Visitor Region</div>
+          <div id="kpiTopCountry" class="text-3xl font-black font-mono-numbers text-teal-600 dark:text-teal-400 mt-2">—</div>
+          <div class="text-[11px] text-teal-600 dark:text-teal-300 mt-1 font-medium">Aggregated country code only</div>
         </div>
         <div class="rounded-3xl border border-purple-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
           <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Active Ready Tools</div>
@@ -174,41 +216,70 @@
         </div>
       </div>
 
+      <!-- 7-Day Activity Trend & Category/Tool Usage Breakdown -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Tool Usage Breakdown -->
         <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
-          <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Tool Usage Breakdown</h2>
-            <div class="flex items-center gap-2">
-              <button onclick="refreshDashboard()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
-              </button>
-              <button onclick="resetCloudStats()" class="px-3 py-1.5 rounded-xl border border-rose-500/35 bg-rose-500/10 text-xs font-bold text-rose-600 dark:text-rose-300 hover:bg-rose-500/20">Reset Stats</button>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">7-Day Activity Trend</h2>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Daily views vs completed PDF operations</p>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] font-bold">
+              <span class="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400"><span class="w-2.5 h-2.5 rounded-sm bg-sky-500"></span> Views</span>
+              <span class="inline-flex items-center gap-1.5 text-purple-600 dark:text-purple-300"><span class="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-indigo-500 to-pink-500"></span> Operations</span>
             </div>
           </div>
-          <div id="usageBreakdownContainer" class="space-y-2.5 max-h-96 overflow-y-auto pr-1"></div>
+          <div id="dailyTrendChart" class="h-52 pt-4 flex items-end justify-between gap-2 border-b border-slate-200 dark:border-slate-800"></div>
         </div>
 
-        <!-- Recent Anonymous Activity -->
         <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Recent Anonymous Activity (Latest 50)</h2>
-            <span class="text-[11px] font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">0 Document Bytes Sent</span>
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Category Popularity &amp; Tool Usage</h2>
+            <span class="text-[11px] font-mono-numbers text-slate-400">18 Tools</span>
           </div>
-          <div class="overflow-x-auto max-h-96">
-            <table class="w-full text-left text-xs">
-              <thead class="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                <tr>
-                  <th class="py-2 pr-3">Time</th>
-                  <th class="py-2 pr-3">Tool</th>
-                  <th class="py-2 pr-3">Input Size</th>
-                  <th class="py-2 pr-3">Saved</th>
-                  <th class="py-2">Lang</th>
-                </tr>
-              </thead>
-              <tbody id="recentEventsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80"></tbody>
-            </table>
-          </div>
+          <div id="categoryPillsContainer" class="flex flex-wrap gap-1.5"></div>
+          <div id="usageBreakdownContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <!-- 3-Column Audience, Presets & Viral Share Insights -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Audience (Device, Lang &amp; Regions)</h2>
+          <div id="deviceLangContainer" class="space-y-4 text-xs"></div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">India-First Presets Leaderboard</h2>
+          <div id="presetAnalyticsContainer" class="space-y-2.5 text-xs"></div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Share Channels Breakdown</h2>
+          <div id="shareAnalyticsContainer" class="space-y-2.5 text-xs"></div>
+        </div>
+      </div>
+
+      <!-- Recent Anonymous Activity -->
+      <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Recent Anonymous Activity (Latest 50)</h2>
+          <span class="text-[11px] font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">0 Document Bytes Sent</span>
+        </div>
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+              <tr>
+                <th class="py-2 pr-3">Time</th>
+                <th class="py-2 pr-3">Type</th>
+                <th class="py-2 pr-3">Tool / Target</th>
+                <th class="py-2 pr-3">Input Size</th>
+                <th class="py-2 pr-3">Saved</th>
+                <th class="py-2">Device / Region</th>
+              </tr>
+            </thead>
+            <tbody id="recentEventsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -414,12 +485,22 @@
         totalBytesProcessed: 0,
         totalBytesSaved: 0,
         pageViews: 0,
+        toolOpens: 0,
+        totalShares: 0,
+        totalPresetClicks: 0,
         toolUsage: {},
+        presetUsage: {},
+        shareStats: {},
+        deviceStats: { desktop: 0, mobile: 0, tablet: 0 },
+        langStats: { en: 0, hi: 0, ta: 0 },
+        countryStats: {},
+        dailyStats: {},
         recentEvents: []
       },
       storageMode: 'local-browser',
       kvConfigured: false
     };
+    let autoRefreshTimer = null;
 
     async function sha256Hex(str) {
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -523,6 +604,9 @@
     }
 
     function logoutAdmin() {
+      toggleAutoRefresh(false);
+      const toggleEl = document.getElementById('autoRefreshToggle');
+      if (toggleEl) toggleEl.checked = false;
       sessionStorage.removeItem('pdfly_admin_passcode');
       activePasscode = '';
       document.getElementById('adminPasscodeInput').value = '';
@@ -606,51 +690,179 @@
       }
     }
 
+    function renderBarRows(rows, gradientClass = 'from-indigo-500 via-purple-500 to-pink-500') {
+      const maxVal = Math.max(1, ...rows.map(r => Number(r.count || 0)));
+      return rows.map(r => {
+        const count = Number(r.count || 0);
+        const pct = Math.round((count / maxVal) * 100);
+        return `
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="font-semibold text-slate-800 dark:text-slate-200 truncate pr-2">${r.label}</span>
+              <span class="font-mono-numbers font-bold text-indigo-600 dark:text-indigo-300 shrink-0">${count}</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r ${gradientClass}" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderOverview() {
       const stats = cloudState.stats || {};
       const overrides = cloudState.config?.toolOverrides || {};
       const readyCount = BASE_TOOLS.filter(t => (overrides[t.id]?.state || t.defaultState) === 'ready').length;
+      const totalOps = Number(stats.totalOperations || 0);
+      const totalProcessed = Number(stats.totalBytesProcessed || 0);
+      const totalSaved = Number(stats.totalBytesSaved || 0);
+      const totalViews = Number(stats.pageViews || 0);
+      const toolOpens = Number(stats.toolOpens || 0);
+      const totalPresets = Number(stats.totalPresetClicks || 0);
+      const totalShares = Number(stats.totalShares || 0);
 
-      document.getElementById('kpiTotalOps').innerText = Number(stats.totalOperations || 0).toLocaleString();
-      document.getElementById('kpiBytesSaved').innerText = formatSize(stats.totalBytesSaved || 0);
-      document.getElementById('kpiPageViews').innerText = Number(stats.pageViews || 0).toLocaleString();
+      const avgSavePct = totalProcessed > 0 ? Math.min(100, Math.round((totalSaved / totalProcessed) * 100)) : 0;
+      const conversionDenominator = totalViews > 0 ? totalViews : toolOpens;
+      const conversionPct = conversionDenominator > 0 ? Math.min(100, Math.round((totalOps / conversionDenominator) * 100)) : 0;
+
+      const countryEntries = Object.entries(stats.countryStats || {}).sort((a, b) => (b[1] || 0) - (a[1] || 0));
+      const topCountry = countryEntries.length > 0 ? `${countryEntries[0][0]} (${countryEntries[0][1]})` : '—';
+
+      document.getElementById('kpiTotalOps').innerText = totalOps.toLocaleString();
+      document.getElementById('kpiBytesSaved').innerText = formatSize(totalSaved);
+      document.getElementById('kpiAvgSavingsPct').innerText = `${avgSavePct}% avg reduction`;
+      document.getElementById('kpiPageViews').innerText = totalViews.toLocaleString();
+      document.getElementById('kpiConversionRate').innerText = `${conversionPct}%`;
+      document.getElementById('kpiToolOpens').innerText = `${toolOpens.toLocaleString()} tool opens`;
+      document.getElementById('kpiPresetClicks').innerText = totalPresets.toLocaleString();
+      document.getElementById('kpiTotalShares').innerText = totalShares.toLocaleString();
+      document.getElementById('kpiTopCountry').innerText = topCountry;
       document.getElementById('kpiReadyTools').innerText = `${readyCount} / ${BASE_TOOLS.length}`;
       document.getElementById('kpiConfigUpdated').innerText = cloudState.config?.updatedAt
         ? `Updated ${new Date(cloudState.config.updatedAt).toLocaleTimeString()}`
         : 'Config live';
 
-      const usage = stats.toolUsage || {};
-      const maxCount = Math.max(1, ...BASE_TOOLS.map(t => Number(usage[t.id] || 0)));
-      document.getElementById('usageBreakdownContainer').innerHTML = BASE_TOOLS.map(tool => {
-        const count = Number(usage[tool.id] || 0);
-        const pct = Math.round((count / maxCount) * 100);
+      // 7-Day Activity Trend Chart
+      const daily = stats.dailyStats || {};
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+        const entry = daily[d] || { views: 0, operations: 0, bytesSaved: 0 };
+        last7Days.push({
+          date: d,
+          label: d.slice(5),
+          views: Number(entry.views || 0),
+          operations: Number(entry.operations || 0)
+        });
+      }
+      const maxTrendVal = Math.max(1, ...last7Days.flatMap(d => [d.views, d.operations]));
+      document.getElementById('dailyTrendChart').innerHTML = last7Days.map(d => {
+        const viewH = Math.max(d.views > 0 ? 8 : 2, Math.round((d.views / maxTrendVal) * 128));
+        const opH = Math.max(d.operations > 0 ? 8 : 2, Math.round((d.operations / maxTrendVal) * 128));
         return `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs">
-              <span class="font-semibold text-slate-800 dark:text-slate-200">${tool.title} <span class="text-[10px] font-mono-numbers text-slate-400">(${tool.id})</span></span>
-              <span class="font-mono-numbers font-bold text-indigo-600 dark:text-indigo-300">${count}</span>
+          <div class="flex-1 flex flex-col items-center justify-end gap-1.5 pb-2">
+            <div class="text-[10px] font-mono-numbers text-slate-500 dark:text-slate-400">${d.views}/${d.operations}</div>
+            <div class="w-full flex items-end justify-center gap-1 h-32">
+              <div title="${d.date}: ${d.views} views" class="w-3 sm:w-4 rounded-t-md bg-sky-500/90 transition-all" style="height: ${viewH}px"></div>
+              <div title="${d.date}: ${d.operations} operations" class="w-3 sm:w-4 rounded-t-md bg-gradient-to-t from-indigo-500 via-purple-500 to-pink-500 transition-all" style="height: ${opH}px"></div>
             </div>
-            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-              <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" style="width: ${pct}%"></div>
-            </div>
+            <div class="text-[10px] font-mono-numbers font-bold text-slate-600 dark:text-slate-300">${d.label}</div>
           </div>
         `;
       }).join('');
 
+      // Category Popularity Pills & Tool Breakdown
+      const usage = stats.toolUsage || {};
+      const catNames = ['organize', 'optimize', 'convert', 'edit', 'security', 'intelligence'];
+      const totalCatOps = Math.max(1, BASE_TOOLS.reduce((acc, t) => acc + Number(usage[t.id] || 0), 0));
+      document.getElementById('categoryPillsContainer').innerHTML = catNames.map(cat => {
+        const catSum = BASE_TOOLS.filter(t => t.category === cat).reduce((acc, t) => acc + Number(usage[t.id] || 0), 0);
+        const catPct = Math.round((catSum / totalCatOps) * 100);
+        return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-200 capitalize">${cat}: ${catSum} (${catPct}%)</span>`;
+      }).join('');
+
+      document.getElementById('usageBreakdownContainer').innerHTML = renderBarRows(
+        BASE_TOOLS.map(t => ({ label: `${t.title} <span class="text-[10px] font-mono-numbers text-slate-400">(${t.id})</span>`, count: Number(usage[t.id] || 0) }))
+      );
+
+      // Device, Language & Region Breakdown
+      const dev = stats.deviceStats || {};
+      const lng = stats.langStats || {};
+      const countryHtml = countryEntries.length
+        ? countryEntries.slice(0, 6).map(([code, cnt]) => `<span class="text-[10px] font-mono-numbers px-2 py-0.5 rounded-lg bg-teal-500/15 text-teal-700 dark:text-teal-300 font-bold">${code}: ${cnt}</span>`).join('')
+        : '<span class="text-[11px] text-slate-400">No region data yet</span>';
+
+      document.getElementById('deviceLangContainer').innerHTML = `
+        <div class="space-y-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Devices</div>
+          ${renderBarRows([
+            { label: 'Desktop', count: dev.desktop || 0 },
+            { label: 'Mobile', count: dev.mobile || 0 },
+            { label: 'Tablet', count: dev.tablet || 0 }
+          ], 'from-sky-500 to-indigo-500')}
+        </div>
+        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Languages</div>
+          ${renderBarRows([
+            { label: 'English (EN)', count: lng.en || 0 },
+            { label: 'हिन्दी (Hindi)', count: lng.hi || 0 },
+            { label: 'தமிழ் (Tamil)', count: lng.ta || 0 }
+          ], 'from-emerald-500 to-teal-500')}
+        </div>
+        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Top Regions</div>
+          <div class="flex flex-wrap gap-1.5">${countryHtml}</div>
+        </div>
+      `;
+
+      // India-First Presets Leaderboard
+      const presetUsage = stats.presetUsage || {};
+      document.getElementById('presetAnalyticsContainer').innerHTML = renderBarRows(
+        BASE_PRESETS.map(p => ({ label: `${p.defaultTitle} (${p.defaultBadge})`, count: presetUsage[p.id] || 0 })),
+        'from-amber-500 to-orange-500'
+      );
+
+      // Share Channels Breakdown
+      const shareStats = stats.shareStats || {};
+      const shareChannels = [
+        { id: 'whatsapp', label: 'WhatsApp' },
+        { id: 'copy-link', label: 'Copy Share Link' },
+        { id: 'output-file', label: 'Output File Share' },
+        { id: 'telegram', label: 'Telegram' },
+        { id: 'twitter', label: 'X / Twitter' },
+        { id: 'linkedin', label: 'LinkedIn' },
+        { id: 'email', label: 'Email' },
+        { id: 'native', label: 'System Share' }
+      ];
+      document.getElementById('shareAnalyticsContainer').innerHTML = renderBarRows(
+        shareChannels.map(ch => ({ label: ch.label, count: shareStats[ch.id] || 0 })),
+        'from-pink-500 to-rose-500'
+      );
+
+      // Recent Anonymous Events
       const events = stats.recentEvents || [];
       const tbody = document.getElementById('recentEventsTableBody');
       if (!events.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400">No operations recorded yet. Process a PDF in the main workspace to see live events.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">No operations recorded yet. Use PDFly tools, presets, or share buttons to see live events.</td></tr>';
       } else {
-        tbody.innerHTML = events.map(ev => `
-          <tr>
-            <td class="py-2 pr-3 font-mono-numbers text-[11px] text-slate-500 dark:text-slate-400">${new Date(ev.timestamp).toLocaleTimeString()}</td>
-            <td class="py-2 pr-3 font-bold text-slate-800 dark:text-slate-200">${ev.toolId}</td>
-            <td class="py-2 pr-3 font-mono-numbers text-slate-600 dark:text-slate-300">${formatSize(ev.bytes)}</td>
-            <td class="py-2 pr-3 font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">${formatSize(ev.savedBytes)}</td>
-            <td class="py-2 uppercase font-mono-numbers text-[10px] text-slate-500">${ev.lang || 'en'}</td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = events.map(ev => {
+          const evType = ev.eventType || 'operation';
+          const badgeClass = evType === 'share'
+            ? 'bg-pink-500/15 text-pink-600 dark:text-pink-300'
+            : evType === 'preset'
+              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300'
+              : 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300';
+          return `
+            <tr>
+              <td class="py-2 pr-3 font-mono-numbers text-[11px] text-slate-500 dark:text-slate-400">${new Date(ev.timestamp).toLocaleTimeString()}</td>
+              <td class="py-2 pr-3"><span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${badgeClass}">${evType}</span></td>
+              <td class="py-2 pr-3 font-bold text-slate-800 dark:text-slate-200">${ev.toolId}</td>
+              <td class="py-2 pr-3 font-mono-numbers text-slate-600 dark:text-slate-300">${ev.bytes ? formatSize(ev.bytes) : '—'}</td>
+              <td class="py-2 pr-3 font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">${ev.savedBytes ? formatSize(ev.savedBytes) : '—'}</td>
+              <td class="py-2 font-mono-numbers text-[10px] text-slate-500 uppercase">${ev.device || 'desktop'} / ${ev.country || 'LOCAL'} / ${ev.lang || 'en'}</td>
+            </tr>
+          `;
+        }).join('');
       }
     }
 
@@ -807,12 +1019,85 @@
       await publishConfigToCloudAndLocal(nextConfig, 'Banner & site defaults published!');
     }
 
+    function toggleAutoRefresh(enabled) {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+      if (enabled) {
+        autoRefreshTimer = setInterval(refreshDashboard, 15000);
+        showToast('Live auto-refresh enabled (every 15s)');
+      }
+    }
+
+    function exportAnalyticsCsv() {
+      const s = cloudState.stats || {};
+      const lines = ['Section,Metric,Value'];
+      const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+      lines.push(`KPI,Total Operations,${s.totalOperations || 0}`);
+      lines.push(`KPI,Total Bytes Processed,${s.totalBytesProcessed || 0}`);
+      lines.push(`KPI,Total Bytes Saved,${s.totalBytesSaved || 0}`);
+      lines.push(`KPI,Workspace Views,${s.pageViews || 0}`);
+      lines.push(`KPI,Tool Opens,${s.toolOpens || 0}`);
+      lines.push(`KPI,Preset Clicks,${s.totalPresetClicks || 0}`);
+      lines.push(`KPI,Viral Shares,${s.totalShares || 0}`);
+
+      Object.entries(s.dailyStats || {}).sort((a, b) => a[0].localeCompare(b[0])).forEach(([day, d]) => {
+        lines.push(`Daily Trend,${esc(day + ' Views')},${d.views || 0}`);
+        lines.push(`Daily Trend,${esc(day + ' Operations')},${d.operations || 0}`);
+        lines.push(`Daily Trend,${esc(day + ' Bytes Saved')},${d.bytesSaved || 0}`);
+      });
+
+      BASE_TOOLS.forEach(t => {
+        lines.push(`Tool Usage,${esc(t.id)},${(s.toolUsage && s.toolUsage[t.id]) || 0}`);
+      });
+      BASE_PRESETS.forEach(p => {
+        lines.push(`Preset Usage,${esc(p.id)},${(s.presetUsage && s.presetUsage[p.id]) || 0}`);
+      });
+      Object.entries(s.shareStats || {}).forEach(([ch, cnt]) => {
+        lines.push(`Share Channels,${esc(ch)},${cnt || 0}`);
+      });
+      Object.entries(s.deviceStats || {}).forEach(([dev, cnt]) => {
+        lines.push(`Devices,${esc(dev)},${cnt || 0}`);
+      });
+      Object.entries(s.langStats || {}).forEach(([lng, cnt]) => {
+        lines.push(`Languages,${esc(lng)},${cnt || 0}`);
+      });
+      Object.entries(s.countryStats || {}).forEach(([cc, cnt]) => {
+        lines.push(`Countries,${esc(cc)},${cnt || 0}`);
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pdfly-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      showToast('Analytics CSV exported');
+    }
+
     async function resetCloudStats() {
       try {
         const data = await callCloudApi('resetStats');
         applyServerDashboardData(data);
       } catch (e) {
-        cloudState.stats = { totalOperations: 0, totalBytesProcessed: 0, totalBytesSaved: 0, pageViews: 0, toolUsage: {}, recentEvents: [] };
+        cloudState.stats = {
+          totalOperations: 0,
+          totalBytesProcessed: 0,
+          totalBytesSaved: 0,
+          pageViews: 0,
+          toolOpens: 0,
+          totalShares: 0,
+          totalPresetClicks: 0,
+          toolUsage: {},
+          presetUsage: {},
+          shareStats: {},
+          deviceStats: { desktop: 0, mobile: 0, tablet: 0 },
+          langStats: { en: 0, hi: 0, ta: 0 },
+          countryStats: {},
+          dailyStats: {},
+          recentEvents: []
+        };
         localStorage.removeItem('pdfly_local_stats');
         renderAllSections();
       }
