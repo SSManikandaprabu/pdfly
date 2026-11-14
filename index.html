@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDFly — Privacy-First PDF Platform | Your PDFs Never Leave Your Device</title>
   <meta name="description" content="100% free, private, local PDF workspace. Merge, split, compress, rotate, watermark, page number, sign, extract text, and convert PDFs directly in your browser. No signup, no watermarks, zero tracking.">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="canonical" href="https://pdfly-five.vercel.app/">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='50%25' stop-color='%23a855f7'/%3E%3Cstop offset='100%25' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M22 18h14l10 10v18a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4z' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M34 18v12h12' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Open Graph / Social Share Preview Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PDFly">
+  <meta property="og:title" content="PDFly — Privacy-First PDF Platform | 100% Local in Browser">
+  <meta property="og:description" content="100% free, private, local PDF workspace. Compress for Aadhaar/PAN/UPSC, merge, split, rotate, watermark, sign, unlock & protect PDFs with zero server uploads.">
+  <meta property="og:url" content="https://pdfly-five.vercel.app/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PDFly — Privacy-First PDF Platform">
+  <meta name="twitter:description" content="100% free, local, zero-upload PDF tools right in your browser.">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -370,6 +383,12 @@
           </span>
           <span id="uploadMeterText" class="font-bold"><span class="hidden sm:inline">0 B uploaded</span><span class="sm:hidden">0 B</span></span>
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <!-- Share PDFly Button -->
+        <button onclick="openShareModal()" title="Share PDFly" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-bold transition-all shadow-sm">
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline" data-i18n="shareBtn">Share</span>
         </button>
 
         <!-- Shortcuts HUD Button -->
@@ -830,13 +849,17 @@
             <!-- Primary Output Action Buttons (Preview & Download) -->
             <div class="space-y-2 pt-2">
               <div class="grid grid-cols-2 gap-2">
-                <button onclick="openOutputPreviewModal()" id="previewResultBtn" class="py-2.5 px-3 rounded-2xl font-bold text-xs border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 flex items-center justify-center gap-1.5 transition-all">
+                <button onclick="openOutputPreviewModal()" id="previewResultBtn" class="py-2.5 px-3 rounded-2xl font-bold text-xs border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 flex items-center justify-center gap-1.5 transition-all">
                   <i data-lucide="eye" class="w-4 h-4"></i> Preview Output
                 </button>
                 <a id="downloadResultBtn" href="#" download class="py-2.5 px-3 rounded-2xl font-bold text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5 transition-all">
                   <i data-lucide="download" class="w-4 h-4"></i> Download
                 </a>
               </div>
+
+              <button onclick="shareOutputFile()" id="shareResultBtn" class="w-full py-2.5 px-3 rounded-2xl font-bold text-xs border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 flex items-center justify-center gap-1.5 transition-all">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Share Processed File / Tool
+              </button>
 
               <!-- ZERO-COPY TOOL CHAINING ("Continue with...") -->
               <div id="chainWorkflowSection" class="pt-2 border-t border-brand-border">
@@ -877,9 +900,12 @@
         <span class="font-black text-brand-foreground font-heading text-gradient-vibrant">PDFly</span>
         <span>— Free, local, private PDF tools. No signup. No watermarks.</span>
       </div>
-      <div class="flex items-center gap-6 font-medium">
+      <div class="flex flex-wrap items-center justify-center gap-6 font-medium">
         <a href="#" onclick="openVerificationModal(); return false;" class="hover:text-purple-400 transition-colors">Privacy Architecture</a>
         <a href="#" onclick="openShortcutsModal(); return false;" class="hover:text-cyan-400 transition-colors">Shortcuts (?)</a>
+        <a href="#" onclick="openShareModal(); return false;" class="hover:text-indigo-400 transition-colors flex items-center gap-1">
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Share
+        </a>
         <a href="https://github.com/SSManikandaprabu/pdfly" target="_blank" class="hover:text-pink-400 transition-colors flex items-center gap-1.5">
           <i data-lucide="github" class="w-4 h-4"></i> GitHub
         </a>
@@ -1044,6 +1070,63 @@
         <div class="flex justify-between items-center p-2 rounded-xl bg-brand-surface-muted">
           <span class="text-brand-foreground font-medium">Show This Shortcuts Guide</span>
           <kbd class="px-2 py-0.5 rounded bg-brand-surface border border-brand-border font-mono-numbers text-indigo-400">?</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F. Share PDFly Modal -->
+  <div id="shareModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="if (event.target === this) closeShareModal()">
+    <div class="w-full max-w-md rounded-3xl border border-purple-500/30 bg-brand-surface shadow-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-brand-border pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center shadow-md shadow-purple-500/25">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-sm text-brand-foreground font-heading">Share PDFly</h3>
+        </div>
+        <button onclick="closeShareModal()" class="p-1.5 rounded-xl hover:bg-brand-surface-muted text-brand-muted hover:text-brand-foreground transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-brand-muted leading-relaxed">
+        Help friends, classmates, or colleagues compress, merge, sign &amp; protect PDFs privately with zero uploads.
+      </p>
+
+      <!-- Copyable Share URL -->
+      <div class="space-y-1.5">
+        <label for="shareUrlInput" class="text-[11px] font-bold uppercase tracking-wider text-brand-muted block">Shareable Link</label>
+        <div class="flex items-center gap-2">
+          <input id="shareUrlInput" type="text" readonly value="https://pdfly-five.vercel.app/" onclick="this.select()" class="flex-1 text-xs font-mono-numbers px-3 py-2 rounded-xl border border-brand-border bg-brand-surface-muted text-brand-foreground focus:outline-none focus:border-purple-500">
+          <button id="copyShareUrlBtn" onclick="copyShareLink()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all whitespace-nowrap">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Link
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Social Share Channels -->
+      <div class="space-y-2 pt-1">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-brand-muted block">Quick Share Via</span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button onclick="shareViaChannel('whatsapp')" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all">
+            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+          </button>
+          <button onclick="shareViaChannel('telegram')" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all">
+            <i data-lucide="send" class="w-4 h-4"></i> Telegram
+          </button>
+          <button onclick="shareViaChannel('twitter')" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-500/30 bg-slate-500/10 hover:bg-slate-500/20 text-brand-foreground text-xs font-bold transition-all">
+            <i data-lucide="at-sign" class="w-4 h-4"></i> X / Twitter
+          </button>
+          <button onclick="shareViaChannel('linkedin')" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-bold transition-all">
+            <i data-lucide="briefcase" class="w-4 h-4"></i> LinkedIn
+          </button>
+          <button onclick="shareViaChannel('email')" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold transition-all">
+            <i data-lucide="mail" class="w-4 h-4"></i> Email
+          </button>
+          <button onclick="shareViaNative()" class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold transition-all">
+            <i data-lucide="smartphone" class="w-4 h-4"></i> System Share
+          </button>
         </div>
       </div>
     </div>
@@ -3106,6 +3189,7 @@
         closeSignatureModal();
         closeOutputPreviewModal();
         closeShortcutsModal();
+        closeShareModal();
       } else if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         openShortcutsModal();
       }
@@ -3133,6 +3217,104 @@
     // Network Verification Modal
     function openVerificationModal() { document.getElementById('verificationModal').classList.remove('hidden'); }
     function closeVerificationModal() { document.getElementById('verificationModal').classList.add('hidden'); }
+
+    // Share PDFly Modal, Social Links & Native Web Share API
+    function getSharePayload() {
+      const toolViewEl = document.getElementById('toolView');
+      const isToolOpen = typeof activeTool !== 'undefined' && activeTool && toolViewEl && !toolViewEl.classList.contains('hidden');
+      const baseUrl = 'https://pdfly-five.vercel.app/';
+      const url = isToolOpen ? `${baseUrl}?tool=${encodeURIComponent(activeTool.id)}` : baseUrl;
+      const title = isToolOpen ? `PDFly — ${activeTool.title}` : 'PDFly — 100% Private Local PDF Tools';
+      const text = 'Check out PDFly — 100% free, local, privacy-first PDF tools (Aadhaar/PAN compressor, merge, split, sign, protect) right in your browser with 0 uploads!';
+      return { title, text, url };
+    }
+
+    function openShareModal() {
+      const { url } = getSharePayload();
+      const input = document.getElementById('shareUrlInput');
+      if (input) input.value = url;
+      const modal = document.getElementById('shareModal');
+      if (modal) modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeShareModal() {
+      const modal = document.getElementById('shareModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function copyShareLink() {
+      const input = document.getElementById('shareUrlInput');
+      const url = (input && input.value) || getSharePayload().url;
+      const btn = document.getElementById('copyShareUrlBtn');
+      const markCopied = () => {
+        if (!btn) return;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-300"></i> Copied!';
+        lucide.createIcons();
+        setTimeout(() => { btn.innerHTML = oldHtml; lucide.createIcons(); }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(markCopied).catch(() => {
+          if (input) { input.select(); document.execCommand('copy'); markCopied(); }
+        });
+      } else if (input) {
+        input.select();
+        document.execCommand('copy');
+        markCopied();
+      }
+    }
+
+    function shareViaChannel(channel) {
+      const { title, text, url } = getSharePayload();
+      if (channel === 'email') {
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text + '\n\n' + url)}`;
+        return;
+      }
+      const urls = {
+        whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`,
+        telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+        twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+        linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+      };
+      if (urls[channel]) {
+        window.open(urls[channel], '_blank', 'noopener,noreferrer');
+      }
+    }
+
+    async function shareViaNative() {
+      const { title, text, url } = getSharePayload();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text, url });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      copyShareLink();
+    }
+
+    async function shareOutputFile() {
+      if (lastGeneratedBlob && typeof File !== 'undefined' && navigator.canShare && navigator.share) {
+        try {
+          const file = new File([lastGeneratedBlob], lastGeneratedFilename || 'document.pdf', {
+            type: lastGeneratedBlob.type || 'application/octet-stream'
+          });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: lastGeneratedFilename || 'PDFly Document',
+              text: 'Processed locally with PDFly (https://pdfly-five.vercel.app)'
+            });
+            return;
+          }
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      openShareModal();
+    }
 
     // Theme Switcher
     function toggleTheme() {
@@ -3184,6 +3366,7 @@
       en: {
         tagline: "Your PDFs never leave your device",
         searchPlaceholder: "Search 40+ PDF tools...",
+        shareBtn: "Share",
         heroBadge: "100% Free • No Sign-up • No Limits • No Watermark",
         heroHeading: 'Every tool you need to work with PDFs <br><span class="text-gradient-vibrant">in one vibrant workspace</span>',
         heroSubheading: "Your PDFs never leave your device. All operations happen instantly inside your browser with cryptographic privacy.",
@@ -3194,6 +3377,7 @@
       hi: {
         tagline: "आपकी PDF फाइलें कभी आपके डिवाइस से बाहर नहीं जातीं",
         searchPlaceholder: "40+ PDF टूल्स खोजें...",
+        shareBtn: "शेयर",
         heroBadge: "100% मुफ़्त • कोई साइन-अप नहीं • कोई सीमा नहीं • कोई वॉटरमार्क नहीं",
         heroHeading: 'PDF के साथ काम करने के लिए आवश्यक हर टूल <br><span class="text-gradient-vibrant">एक जीवंत वर्कस्पेस में</span>',
         heroSubheading: "आपकी PDF फाइलें आपके डिवाइस पर सुरक्षित रहती हैं। सभी प्रक्रियाएं आपके ब्राउज़र में तुरंत होती हैं।",
@@ -3204,6 +3388,7 @@
       ta: {
         tagline: "உங்கள் PDF கோப்புகள் உங்கள் சாதனத்தை விட்டு வெளியேறாது",
         searchPlaceholder: "40+ கருவிகளைத் தேடுக...",
+        shareBtn: "பகிர்",
         heroBadge: "100% இலவசம் • உள்நுழைவு இல்லை • வரம்புகள் இல்லை • வாட்டர்மார்க் இல்லை",
         heroHeading: 'PDF உடன் பணிபுரிய தேவையான அனைத்து கருவிகளும் <br><span class="text-gradient-vibrant">ஒரே இடத்தில்</span>',
         heroSubheading: "உங்கள் PDF கோப்புகள் உங்கள் சாதனத்திலேயே பாதுகாப்பாக இருக்கும். அனைத்து பணிகளும் உலாவியில் உடனே நடக்கும்.",
@@ -3248,6 +3433,11 @@
       document.getElementById('mainDropzone').addEventListener('click', () => {
         document.getElementById('mainFileInput').click();
       });
+
+      const urlTool = new URLSearchParams(window.location.search).get('tool') || window.location.hash.replace('#', '').trim();
+      if (urlTool && TOOL_CATALOG.some(t => t.id === urlTool && t.state === 'ready')) {
+        launchTool(urlTool);
+      }
 
       lucide.createIcons();
     });

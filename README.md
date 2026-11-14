@@ -15,7 +15,7 @@
   <a href="https://ssmanikandaprabu.github.io/pdfly/"><img src="https://img.shields.io/badge/GitHub%20Pages-Live%20Site-238636?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Pages" /></a>
   <a href="#-privacy--security-architecture"><img src="https://img.shields.io/badge/Privacy-100%25%20Client--Side-10b981?style=for-the-badge&logo=shield" alt="100% Client-Side" /></a>
   <a href="#-features"><img src="https://img.shields.io/badge/Files%20Uploaded-0%20Bytes-6366f1?style=for-the-badge&logo=icloud" alt="0 Bytes Uploaded" /></a>
-  <a href="#-automated-acceptance-testing"><img src="https://img.shields.io/badge/Engine%20Tests-11%2F11%20Passed-06b6d4?style=for-the-badge&logo=checkmarx" alt="Tests Passed" /></a>
+  <a href="#-automated-acceptance-testing"><img src="https://img.shields.io/badge/Engine%20Tests-13%2F13%20Passed-06b6d4?style=for-the-badge&logo=checkmarx" alt="Tests Passed" /></a>
   <a href="#-license"><img src="https://img.shields.io/badge/License-MIT-f59e0b?style=for-the-badge" alt="MIT License" /></a>
 </p>
 
@@ -69,10 +69,12 @@ Unlike conventional PDF web converters that upload your confidential tax returns
 
 ### 🔒 5. PDF Security
 * **Protect PDF:** Real **128-bit RC4 standard PDF password encryption** powered by `@pdfsmaller/pdf-encrypt-lite`. Password-protected PDFs strictly prompt for a password across Adobe Acrobat, Chrome, Firefox, Apple Preview, and PDF.js before any content can be viewed.
+* **Unlock PDF:** Decrypt and remove password restrictions from protected PDFs locally in-browser and export an unencrypted copy.
 
 ### 🧠 6. PDF Intelligence & Productivity
 * **Extract Text (TXT):** Instant in-browser text stream extraction with 1-click clipboard copy and direct `.txt` download.
 * **Zero-Copy Tool Chaining:** Seamlessly pipe an output file into another tool (e.g., Merge &rarr; Watermark &rarr; Protect) without re-uploading.
+* **1-Click Native File & Social Sharing:** Share processed output files directly via Web Share API or share deep tool links via WhatsApp, Telegram, X, LinkedIn, Email, and instant link copy.
 * **In-Browser Output Previewer:** High-fidelity interactive PDF viewer modal to inspect results before saving.
 * **Document Inspector Card:** Live metadata viewer displaying page counts, paper format approximation (A4 vs US Letter), and exact file size.
 * **Command Palette:** Keyboard-driven Quick Launcher triggered by `Ctrl + K` or `Cmd + K`.

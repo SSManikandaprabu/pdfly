@@ -210,8 +210,11 @@ async function testAll() {
       throw new Error(`Expected tool '${toolId}' with state: 'ready' not found in TOOL_CATALOG`);
     }
   }
+  if (!mainScript.includes('function openShareModal') || !mainScript.includes('function shareOutputFile')) {
+    throw new Error('Share workflow functions (openShareModal / shareOutputFile) missing from main script');
+  }
   console.log(
-    `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, and all ${expectedReadyTools.length} ready tools present`
+    `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, share helpers & all ${expectedReadyTools.length} ready tools present`
   );
 
   console.log('\n>>> ALL 13 ENGINE ACCEPTANCE TESTS (INCLUDING REAL ENCRYPTION & UI INTEGRITY) PASSED! <<<');
