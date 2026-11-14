@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDFly — Cloud Admin Console</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='50%25' stop-color='%23a855f7'/%3E%3Cstop offset='100%25' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cpath d='M22 18h14l10 10v18a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4z' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M34 18v12h12' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --fg: #0f172a;
+    }
+    html.dark {
+      color-scheme: dark;
+      --bg: #070913;
+      --fg: #f8fafc;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, .font-heading { font-family: 'Poppins', sans-serif; }
+    .font-mono-numbers { font-family: 'JetBrains Mono', monospace; }
+    .text-gradient-vibrant {
+      background: linear-gradient(135deg, #818cf8 0%, #c084fc 35%, #f472b6 70%, #fb923c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+  <script>
+    tailwind.config = { darkMode: 'class' };
+  </script>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Toast Banner -->
+  <div id="adminToast" class="fixed bottom-5 right-5 z-[100] hidden px-4 py-3 rounded-2xl border border-emerald-500/40 bg-white dark:bg-[#0b0f24] shadow-2xl flex items-center gap-2.5 text-xs font-bold">
+    <i id="adminToastIcon" data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+    <span id="adminToastText" class="text-slate-900 dark:text-white">Saved</span>
+  </div>
+
+  <!-- PASSCODE LOGIN OVERLAY -->
+  <div id="loginOverlay" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-3xl border border-indigo-500/35 bg-white dark:bg-[#0b0f24] p-7 shadow-2xl space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-black font-heading text-slate-900 dark:text-white">PDFly <span class="text-gradient-vibrant">Admin</span></h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Cloud-Synced Console &amp; Analytics</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label for="adminPasscodeInput" class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">Admin Passcode</label>
+          <div class="relative">
+            <input id="adminPasscodeInput" type="password" autocomplete="current-password" placeholder="Enter admin passcode" required class="w-full pr-10 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-sm text-slate-900 dark:text-white focus:outline-none focus:border-purple-500">
+            <button type="button" onclick="togglePasscodeVisibility('adminPasscodeInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">Default passcode: <code class="font-mono-numbers px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 font-bold">admin123</code> (set env <code class="font-mono-numbers">ADMIN_PASSCODE</code> or update inside Security tab).</p>
+        </div>
+
+        <div id="loginErrorBox" class="hidden p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/35 text-xs text-rose-600 dark:text-rose-300 font-semibold"></div>
+
+        <button id="loginSubmitBtn" type="submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white text-xs font-extrabold shadow-lg shadow-purple-500/30 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span>Unlock Admin Console</span>
+        </button>
+      </form>
+
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+        <a href="./index.html" class="text-indigo-600 dark:text-indigo-300 font-semibold hover:underline flex items-center gap-1">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to PDFly
+        </a>
+        <span class="text-slate-400 font-mono-numbers">Zero-Upload Architecture</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 border-b border-slate-200 dark:border-indigo-500/20 bg-white/95 dark:bg-[#070913]/95 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center shadow-md">
+          <i data-lucide="sliders" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-lg font-heading text-gradient-vibrant">PDFly</span>
+            <span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30">Cloud Admin Console</span>
+          </div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Feature Flags, Analytics, Presets &amp; Cloud Sync</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="cloudStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-[11px] font-bold">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span>Connecting...</span>
+        </span>
+
+        <button onclick="toggleTheme()" title="Toggle Light/Dark Theme" class="p-2 rounded-xl border border-slate-200 dark:border-indigo-500/30 bg-slate-100 dark:bg-[#111633] text-slate-700 dark:text-amber-300">
+          <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
+        </button>
+
+        <a href="./index.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-200 text-xs font-bold transition-all">
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open Live Site
+        </a>
+
+        <button onclick="logoutAdmin()" class="px-3 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 text-xs font-bold transition-all flex items-center gap-1">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TAB BAR -->
+  <nav class="border-b border-slate-200 dark:border-indigo-500/20 bg-white/90 dark:bg-[#0b0f24]/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2.5">
+      <button onclick="switchTab('overview')" data-tab-btn="overview" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow">Overview &amp; Analytics</button>
+      <button onclick="switchTab('tools')" data-tab-btn="tools" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Tool Catalog (18)</button>
+      <button onclick="switchTab('presets')" data-tab-btn="presets" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">India-First Presets</button>
+      <button onclick="switchTab('settings')" data-tab-btn="settings" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Banner &amp; Site Defaults</button>
+      <button onclick="switchTab('cloud')" data-tab-btn="cloud" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cloud Sync, Security &amp; Backup</button>
+    </div>
+  </nav>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-grow">
+
+    <!-- TAB 1: OVERVIEW & ANALYTICS -->
+    <section id="tab-overview" class="tab-panel space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-3xl border border-indigo-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Total PDF Operations</div>
+          <div id="kpiTotalOps" class="text-3xl font-black font-mono-numbers text-slate-900 dark:text-white mt-2">0</div>
+          <div class="text-[11px] text-indigo-500 dark:text-indigo-300 mt-1 font-medium">Anonymous event counter</div>
+        </div>
+        <div class="rounded-3xl border border-emerald-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Size Reduced</div>
+          <div id="kpiBytesSaved" class="text-3xl font-black font-mono-numbers text-emerald-600 dark:text-emerald-400 mt-2">0 KB</div>
+          <div class="text-[11px] text-emerald-600 dark:text-emerald-300 mt-1 font-medium">Cumulative user bandwidth saved</div>
+        </div>
+        <div class="rounded-3xl border border-cyan-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Workspace Views</div>
+          <div id="kpiPageViews" class="text-3xl font-black font-mono-numbers text-sky-600 dark:text-sky-400 mt-2">0</div>
+          <div class="text-[11px] text-sky-600 dark:text-sky-300 mt-1 font-medium">Synced via /api/admin</div>
+        </div>
+        <div class="rounded-3xl border border-purple-500/30 bg-white dark:bg-[#0b0f24] p-5 shadow-sm">
+          <div class="text-xs font-bold text-slate-500 dark:text-slate-400">Active Ready Tools</div>
+          <div id="kpiReadyTools" class="text-3xl font-black font-mono-numbers text-purple-600 dark:text-purple-400 mt-2">16 / 18</div>
+          <div id="kpiConfigUpdated" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">Config live</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tool Usage Breakdown -->
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Tool Usage Breakdown</h2>
+            <div class="flex items-center gap-2">
+              <button onclick="refreshDashboard()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+              </button>
+              <button onclick="resetCloudStats()" class="px-3 py-1.5 rounded-xl border border-rose-500/35 bg-rose-500/10 text-xs font-bold text-rose-600 dark:text-rose-300 hover:bg-rose-500/20">Reset Stats</button>
+            </div>
+          </div>
+          <div id="usageBreakdownContainer" class="space-y-2.5 max-h-96 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Recent Anonymous Activity -->
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Recent Anonymous Activity (Latest 50)</h2>
+            <span class="text-[11px] font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">0 Document Bytes Sent</span>
+          </div>
+          <div class="overflow-x-auto max-h-96">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th class="py-2 pr-3">Time</th>
+                  <th class="py-2 pr-3">Tool</th>
+                  <th class="py-2 pr-3">Input Size</th>
+                  <th class="py-2 pr-3">Saved</th>
+                  <th class="py-2">Lang</th>
+                </tr>
+              </thead>
+              <tbody id="recentEventsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: TOOL CATALOG & FEATURE FLAGS -->
+    <section id="tab-tools" class="tab-panel hidden space-y-4">
+      <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          <input id="adminToolSearch" type="text" oninput="renderToolsEditor()" placeholder="Filter tools by name or ID..." class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white focus:outline-none">
+          <select id="adminCategoryFilter" onchange="renderToolsEditor()" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none">
+            <option value="all">All Categories (18)</option>
+            <option value="organize">Organize PDF</option>
+            <option value="optimize">Optimize PDF</option>
+            <option value="convert">Convert PDF</option>
+            <option value="edit">Edit PDF</option>
+            <option value="security">PDF Security</option>
+            <option value="intelligence">PDF Intelligence</option>
+          </select>
+        </div>
+        <button onclick="saveToolOverrides()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2">
+          <i data-lucide="upload-cloud" class="w-4 h-4"></i> Save &amp; Publish Tool Catalog
+        </button>
+      </div>
+
+      <div id="toolsEditorGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- TAB 3: INDIA-FIRST PRESETS MANAGER -->
+    <section id="tab-presets" class="tab-panel hidden space-y-4">
+      <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">India-First Instant Accelerator Presets</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Customize titles, badges, visibility, and byte-limit targets applied in the main app.</p>
+        </div>
+        <button onclick="savePresetOverrides()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2">
+          <i data-lucide="upload-cloud" class="w-4 h-4"></i> Save &amp; Publish Presets
+        </button>
+      </div>
+
+      <div id="presetsEditorGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- TAB 4: BANNER & SITE DEFAULTS -->
+    <section id="tab-settings" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Top Announcement Banner</h2>
+            <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+              <input id="annEnabled" type="checkbox" class="w-4 h-4 rounded text-purple-600">
+              <span>Show Banner</span>
+            </label>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Badge Label</label>
+            <input id="annBadge" type="text" placeholder="NEW" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Banner Message</label>
+            <input id="annText" type="text" placeholder="100% Free & Local PDF Tools — Zero Server Uploads!" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">CTA Link Text (Optional)</label>
+              <input id="annLinkText" type="text" placeholder="Try Compress" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">CTA URL (Optional)</label>
+              <input id="annLinkUrl" type="text" placeholder="?tool=compress-target" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 space-y-4">
+          <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Workspace Defaults (New Visitors)</h2>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Default Theme</label>
+            <select id="defaultTheme" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs font-semibold text-slate-900 dark:text-white">
+              <option value="dark">Dark Mode (Default)</option>
+              <option value="light">Light Mode</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Default Interface Language</label>
+            <select id="defaultLang" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs font-semibold text-slate-900 dark:text-white">
+              <option value="en">English (EN)</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+            </select>
+          </div>
+          <div class="pt-4">
+            <button onclick="saveSiteSettings()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white text-xs font-extrabold shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2">
+              <i data-lucide="upload-cloud" class="w-4 h-4"></i> Save &amp; Publish Site Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: CLOUD SYNC, SECURITY & BACKUP -->
+    <section id="tab-cloud" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- KV Persistence Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Upstash Redis / Vercel KV Sync</h2>
+            <span id="kvStatusPill" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30">Serverless Memory</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            PDFly works immediately using Vercel Serverless storage. For permanent global persistence across cold starts and regions, paste your free Upstash Redis REST URL &amp; Token (or configure <code class="font-mono-numbers">KV_REST_API_URL</code> &amp; <code class="font-mono-numbers">KV_REST_API_TOKEN</code> in Vercel Environment Variables).
+          </p>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">REST URL</label>
+            <input id="kvUrlInput" type="url" placeholder="https://your-db.upstash.io" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white font-mono-numbers">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">REST Token</label>
+            <input id="kvTokenInput" type="password" placeholder="AX..." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white font-mono-numbers">
+          </div>
+          <button onclick="configureKvStorage()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold shadow">
+            Connect &amp; Test Cloud KV
+          </button>
+        </div>
+
+        <!-- Passcode & JSON Backup Card -->
+        <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-6 space-y-5">
+          <div class="space-y-3">
+            <h2 class="font-bold text-sm font-heading text-slate-900 dark:text-white">Change Admin Passcode</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input id="newPasscodeInput" type="password" placeholder="New passcode (min 4 chars)" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+              <input id="confirmPasscodeInput" type="password" placeholder="Confirm passcode" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/35 bg-slate-50 dark:bg-[#111633] text-xs text-slate-900 dark:text-white">
+            </div>
+            <button onclick="changeAdminPasscode()" class="w-full py-2.5 rounded-xl border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 text-purple-700 dark:text-purple-200 text-xs font-bold">
+              Update Admin Passcode
+            </button>
+          </div>
+
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Config JSON Backup</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button onclick="exportConfigJson()" class="py-2 px-3 rounded-xl border border-indigo-500/35 bg-indigo-500/10 text-indigo-700 dark:text-indigo-200 text-xs font-bold flex items-center justify-center gap-1.5">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Export JSON
+              </button>
+              <label class="py-2 px-3 rounded-xl border border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Import JSON
+                <input type="file" accept=".json,application/json" class="hidden" onchange="if (this.files[0]) importConfigJson(this.files[0])">
+              </label>
+              <button onclick="resetAdminConfig()" class="py-2 px-3 rounded-xl border border-rose-500/35 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Factory Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const BASE_TOOLS = [
+      { id: 'merge-pdf', category: 'organize', title: 'Merge PDF', desc: 'Combine multiple PDF files into a single ordered document.', defaultState: 'ready', defaultFav: true },
+      { id: 'split-pdf', category: 'organize', title: 'Split PDF', desc: 'Split documents by custom ranges or separate into individual pages.', defaultState: 'ready', defaultFav: false },
+      { id: 'extract-pages', category: 'organize', title: 'Extract Pages', desc: 'Select and export specific pages into a new compact PDF.', defaultState: 'ready', defaultFav: false },
+      { id: 'remove-pages', category: 'organize', title: 'Remove Pages', desc: 'Delete unwanted pages while preserving layout and links.', defaultState: 'ready', defaultFav: false },
+      { id: 'reorder-pages', category: 'organize', title: 'Reorder Pages', desc: 'Rearrange and shuffle page positions visually or by sequence.', defaultState: 'ready', defaultFav: false },
+      { id: 'rotate-pages', category: 'organize', title: 'Rotate PDF', desc: 'Rotate specific or all pages by 90°, 180°, or 270° clockwise.', defaultState: 'ready', defaultFav: false },
+      { id: 'compress-pdf', category: 'optimize', title: 'Compress PDF', desc: 'Reduce document size structurally while preserving vector crispness.', defaultState: 'ready', defaultFav: true },
+      { id: 'compress-target', category: 'optimize', title: 'Compress to Target Size', desc: 'Strictly compress to 50KB, 100KB, 200KB, 500KB, 1MB, or 2MB.', defaultState: 'ready', defaultFav: false },
+      { id: 'images-to-pdf', category: 'convert', title: 'Images to PDF', desc: 'Convert JPG, PNG, and WebP photos into high-res PDF files.', defaultState: 'ready', defaultFav: false },
+      { id: 'pdf-to-images', category: 'convert', title: 'PDF to Images', desc: 'Render and extract high-resolution PNG images in a ZIP archive.', defaultState: 'ready', defaultFav: false },
+      { id: 'watermark-pdf', category: 'edit', title: 'Watermark PDF', desc: 'Stamp customizable text stamps, opacity, and rotation across all pages.', defaultState: 'ready', defaultFav: true },
+      { id: 'page-numbers', category: 'edit', title: 'Page Numbers', desc: 'Add clean headers, footers, and page numbers with custom formats.', defaultState: 'ready', defaultFav: false },
+      { id: 'sign-pdf', category: 'edit', title: 'Sign PDF', desc: 'Draw digital signature with pen pad and stamp onto document pages.', defaultState: 'ready', defaultFav: true },
+      { id: 'extract-text', category: 'intelligence', title: 'Extract Text (TXT)', desc: 'Extract readable text directly in-memory with 1-click clipboard copy.', defaultState: 'ready', defaultFav: true },
+      { id: 'protect-pdf', category: 'security', title: 'Protect PDF', desc: 'Add password protection and permissions restrictions to your documents.', defaultState: 'ready', defaultFav: false },
+      { id: 'unlock-pdf', category: 'security', title: 'Unlock PDF', desc: 'Remove document password restrictions and export unencrypted PDF.', defaultState: 'ready', defaultFav: false },
+      { id: 'ocr-pdf', category: 'intelligence', title: 'Local OCR', desc: 'Extract text from scans using local Tesseract engine.', defaultState: 'coming-soon', defaultFav: false },
+      { id: 'ai-summarize', category: 'intelligence', title: 'AI Assistant', desc: 'Summarize PDF content via Claude Sonnet API.', defaultState: 'coming-soon', defaultFav: false }
+    ];
+
+    const BASE_PRESETS = [
+      { id: 'aadhaar-100kb', defaultTitle: 'Aadhaar Card', defaultBadge: '< 100 KB', defaultTargetKb: 100, hasTarget: true },
+      { id: 'pan-50kb', defaultTitle: 'PAN Card', defaultBadge: '< 50 KB', defaultTargetKb: 50, hasTarget: true },
+      { id: 'resume-200kb', defaultTitle: 'Job Resume', defaultBadge: '< 200 KB', defaultTargetKb: 200, hasTarget: true },
+      { id: 'passport-pdf', defaultTitle: 'Passport Photo', defaultBadge: '35×45mm', defaultTargetKb: 0, hasTarget: false },
+      { id: 'dl-200kb', defaultTitle: 'Driving Licence', defaultBadge: '< 200 KB', defaultTargetKb: 200, hasTarget: true },
+      { id: 'exam-1mb', defaultTitle: 'Govt / UPSC', defaultBadge: '< 1 MB', defaultTargetKb: 1000, hasTarget: true }
+    ];
+
+    const DEFAULT_ADMIN_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // sha256('admin123')
+    let activePasscode = sessionStorage.getItem('pdfly_admin_passcode') || '';
+    let cloudState = {
+      config: {
+        announcement: { enabled: false, badge: 'NEW', text: '100% Free & Local PDF Tools — Zero Server Uploads!', linkText: '', linkUrl: '' },
+        defaultTheme: 'dark',
+        defaultLang: 'en',
+        toolOverrides: {},
+        presetOverrides: {},
+        updatedAt: new Date().toISOString()
+      },
+      stats: {
+        totalOperations: 0,
+        totalBytesProcessed: 0,
+        totalBytesSaved: 0,
+        pageViews: 0,
+        toolUsage: {},
+        recentEvents: []
+      },
+      storageMode: 'local-browser',
+      kvConfigured: false
+    };
+
+    async function sha256Hex(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('adminToast');
+      const icon = document.getElementById('adminToastIcon');
+      const text = document.getElementById('adminToastText');
+      if (!toast || !text) return;
+      toast.className = `fixed bottom-5 right-5 z-[100] px-4 py-3 rounded-2xl border ${isError ? 'border-rose-500/40' : 'border-emerald-500/40'} bg-white dark:bg-[#0b0f24] shadow-2xl flex items-center gap-2.5 text-xs font-bold`;
+      icon.setAttribute('data-lucide', isError ? 'alert-circle' : 'check-circle');
+      icon.className = `w-4 h-4 ${isError ? 'text-rose-500' : 'text-emerald-500'}`;
+      text.innerText = msg;
+      toast.classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(() => toast.classList.add('hidden'), 3200);
+    }
+
+    function togglePasscodeVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+      lucide.createIcons();
+    }
+
+    function formatSize(bytes) {
+      const b = Number(bytes) || 0;
+      if (b >= 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+      return `${(b / 1024).toFixed(1)} KB`;
+    }
+
+    async function callCloudApi(action, extra = {}) {
+      const resp = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, passcode: activePasscode, ...extra })
+      });
+      const data = await resp.json().catch(() => ({ ok: false, error: 'Invalid server response' }));
+      if (!resp.ok || !data.ok) {
+        const err = new Error(data.error || `HTTP ${resp.status}`);
+        err.status = resp.status;
+        throw err;
+      }
+      return data;
+    }
+
+    function loadLocalFallbackState() {
+      try {
+        const localCfg = JSON.parse(localStorage.getItem('pdfly_cloud_config') || 'null');
+        if (localCfg) cloudState.config = { ...cloudState.config, ...localCfg };
+      } catch (e) {}
+      try {
+        const localStats = JSON.parse(localStorage.getItem('pdfly_local_stats') || 'null');
+        if (localStats) cloudState.stats = { ...cloudState.stats, ...localStats };
+      } catch (e) {}
+      cloudState.storageMode = 'local-browser';
+      cloudState.kvConfigured = false;
+    }
+
+    async function handleAdminLogin(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('adminPasscodeInput');
+      const errBox = document.getElementById('loginErrorBox');
+      const pass = (input?.value || '').trim();
+      if (!pass) return;
+      errBox.classList.add('hidden');
+      activePasscode = pass;
+
+      try {
+        const data = await callCloudApi('login');
+        sessionStorage.setItem('pdfly_admin_passcode', pass);
+        applyServerDashboardData(data);
+        document.getElementById('loginOverlay').classList.add('hidden');
+        showToast('Connected to PDFly Cloud Admin');
+      } catch (err) {
+        if (err.status === 401) {
+          activePasscode = '';
+          errBox.innerText = err.message || 'Invalid admin passcode.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        // Fallback when running offline or on static host without /api/admin
+        const hash = await sha256Hex(pass);
+        const savedHash = localStorage.getItem('pdfly_admin_passcode_hash') || DEFAULT_ADMIN_HASH;
+        if (hash !== savedHash) {
+          activePasscode = '';
+          errBox.innerText = 'Invalid admin passcode.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        sessionStorage.setItem('pdfly_admin_passcode', pass);
+        loadLocalFallbackState();
+        document.getElementById('loginOverlay').classList.add('hidden');
+        renderAllSections();
+        showToast('Loaded in Local Browser Sync mode (Cloud API unavailable)');
+      }
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('pdfly_admin_passcode');
+      activePasscode = '';
+      document.getElementById('adminPasscodeInput').value = '';
+      document.getElementById('loginOverlay').classList.remove('hidden');
+    }
+
+    function applyServerDashboardData(data) {
+      if (data.config) {
+        cloudState.config = data.config;
+        localStorage.setItem('pdfly_cloud_config', JSON.stringify(data.config));
+      }
+      if (data.stats) cloudState.stats = data.stats;
+      cloudState.storageMode = data.storageMode || 'serverless-memory';
+      cloudState.kvConfigured = Boolean(data.kvConfigured);
+      renderAllSections();
+    }
+
+    async function refreshDashboard() {
+      try {
+        const data = await callCloudApi('dashboard');
+        applyServerDashboardData(data);
+        showToast('Analytics refreshed from cloud');
+      } catch (err) {
+        loadLocalFallbackState();
+        renderAllSections();
+        showToast('Refreshed from local browser storage');
+      }
+    }
+
+    async function publishConfigToCloudAndLocal(nextConfig, successMsg) {
+      const configToSave = { ...nextConfig, updatedAt: new Date().toISOString() };
+      localStorage.setItem('pdfly_cloud_config', JSON.stringify(configToSave));
+      cloudState.config = configToSave;
+
+      try {
+        const data = await callCloudApi('saveConfig', { config: configToSave });
+        applyServerDashboardData(data);
+        showToast(successMsg || 'Published to Cloud & Local Storage');
+      } catch (err) {
+        if (err.status === 401) {
+          showToast('Session expired — please re-enter passcode', true);
+          logoutAdmin();
+          return;
+        }
+        renderAllSections();
+        showToast(`${successMsg} (Saved locally; Cloud API unreachable)`);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const active = btn.getAttribute('data-tab-btn') === tabId;
+        btn.className = active
+          ? 'tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow'
+          : 'tab-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800';
+      });
+    }
+
+    function renderCloudStatus() {
+      const badge = document.getElementById('cloudStatusBadge');
+      const kvPill = document.getElementById('kvStatusPill');
+      if (cloudState.storageMode === 'vercel-kv') {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 text-[11px] font-bold';
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>Vercel KV Synced</span>';
+        if (kvPill) {
+          kvPill.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30';
+          kvPill.innerText = 'Vercel KV Active';
+        }
+      } else if (cloudState.storageMode === 'serverless-memory') {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-300 text-[11px] font-bold';
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span><span>Cloud API Active</span>';
+        if (kvPill) {
+          kvPill.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30';
+          kvPill.innerText = 'Serverless Memory';
+        }
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-[11px] font-bold';
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Local Sync Only</span>';
+      }
+    }
+
+    function renderOverview() {
+      const stats = cloudState.stats || {};
+      const overrides = cloudState.config?.toolOverrides || {};
+      const readyCount = BASE_TOOLS.filter(t => (overrides[t.id]?.state || t.defaultState) === 'ready').length;
+
+      document.getElementById('kpiTotalOps').innerText = Number(stats.totalOperations || 0).toLocaleString();
+      document.getElementById('kpiBytesSaved').innerText = formatSize(stats.totalBytesSaved || 0);
+      document.getElementById('kpiPageViews').innerText = Number(stats.pageViews || 0).toLocaleString();
+      document.getElementById('kpiReadyTools').innerText = `${readyCount} / ${BASE_TOOLS.length}`;
+      document.getElementById('kpiConfigUpdated').innerText = cloudState.config?.updatedAt
+        ? `Updated ${new Date(cloudState.config.updatedAt).toLocaleTimeString()}`
+        : 'Config live';
+
+      const usage = stats.toolUsage || {};
+      const maxCount = Math.max(1, ...BASE_TOOLS.map(t => Number(usage[t.id] || 0)));
+      document.getElementById('usageBreakdownContainer').innerHTML = BASE_TOOLS.map(tool => {
+        const count = Number(usage[tool.id] || 0);
+        const pct = Math.round((count / maxCount) * 100);
+        return `
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs">
+              <span class="font-semibold text-slate-800 dark:text-slate-200">${tool.title} <span class="text-[10px] font-mono-numbers text-slate-400">(${tool.id})</span></span>
+              <span class="font-mono-numbers font-bold text-indigo-600 dark:text-indigo-300">${count}</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const events = stats.recentEvents || [];
+      const tbody = document.getElementById('recentEventsTableBody');
+      if (!events.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400">No operations recorded yet. Process a PDF in the main workspace to see live events.</td></tr>';
+      } else {
+        tbody.innerHTML = events.map(ev => `
+          <tr>
+            <td class="py-2 pr-3 font-mono-numbers text-[11px] text-slate-500 dark:text-slate-400">${new Date(ev.timestamp).toLocaleTimeString()}</td>
+            <td class="py-2 pr-3 font-bold text-slate-800 dark:text-slate-200">${ev.toolId}</td>
+            <td class="py-2 pr-3 font-mono-numbers text-slate-600 dark:text-slate-300">${formatSize(ev.bytes)}</td>
+            <td class="py-2 pr-3 font-mono-numbers text-emerald-600 dark:text-emerald-400 font-bold">${formatSize(ev.savedBytes)}</td>
+            <td class="py-2 uppercase font-mono-numbers text-[10px] text-slate-500">${ev.lang || 'en'}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderToolsEditor() {
+      const q = (document.getElementById('adminToolSearch')?.value || '').toLowerCase().trim();
+      const cat = document.getElementById('adminCategoryFilter')?.value || 'all';
+      const overrides = cloudState.config?.toolOverrides || {};
+
+      const filtered = BASE_TOOLS.filter(t =>
+        (cat === 'all' || t.category === cat) &&
+        (!q || t.title.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
+      );
+
+      document.getElementById('toolsEditorGrid').innerHTML = filtered.map(tool => {
+        const ov = overrides[tool.id] || {};
+        const stateVal = ov.state || tool.defaultState;
+        const favVal = typeof ov.isDefaultFav === 'boolean' ? ov.isDefaultFav : tool.defaultFav;
+        const titleVal = ov.title || tool.title;
+        const descVal = ov.desc || tool.desc;
+        return `
+          <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-5 space-y-3 shadow-sm" data-tool-card="${tool.id}">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">${tool.category}</span>
+                <span class="text-[11px] font-mono-numbers text-slate-400 ml-1">${tool.id}</span>
+              </div>
+              <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer">
+                <input type="checkbox" data-tool-fav="${tool.id}" ${favVal ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500">
+                <span>Default Fav</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input type="text" data-tool-title="${tool.id}" value="${titleVal.replace(/"/g, '&quot;')}" class="sm:col-span-2 px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs font-bold text-slate-900 dark:text-white">
+              <select data-tool-state="${tool.id}" class="px-2.5 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs font-bold text-slate-900 dark:text-white">
+                <option value="ready" ${stateVal === 'ready' ? 'selected' : ''}>Ready</option>
+                <option value="coming-soon" ${stateVal === 'coming-soon' ? 'selected' : ''}>Coming Soon</option>
+                <option value="hidden" ${stateVal === 'hidden' ? 'selected' : ''}>Hidden</option>
+              </select>
+            </div>
+            <textarea rows="2" data-tool-desc="${tool.id}" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs text-slate-700 dark:text-slate-200 resize-none">${descVal}</textarea>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderPresetsEditor() {
+      const overrides = cloudState.config?.presetOverrides || {};
+      document.getElementById('presetsEditorGrid').innerHTML = BASE_PRESETS.map(p => {
+        const ov = overrides[p.id] || {};
+        const enabledVal = typeof ov.enabled === 'boolean' ? ov.enabled : true;
+        const titleVal = ov.title || p.defaultTitle;
+        const badgeVal = ov.badge || p.defaultBadge;
+        const targetKbVal = ov.targetKb || p.defaultTargetKb;
+        return `
+          <div class="rounded-3xl border border-slate-200 dark:border-indigo-500/25 bg-white dark:bg-[#0b0f24] p-5 space-y-3 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono-numbers font-bold text-indigo-600 dark:text-indigo-300">${p.id}</span>
+              <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                <input type="checkbox" data-preset-enabled="${p.id}" ${enabledVal ? 'checked' : ''} class="w-4 h-4 rounded text-purple-600">
+                <span>Enabled</span>
+              </label>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Preset Title</label>
+              <input type="text" data-preset-title="${p.id}" value="${titleVal.replace(/"/g, '&quot;')}" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs font-bold text-slate-900 dark:text-white">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Badge Label</label>
+                <input type="text" data-preset-badge="${p.id}" value="${badgeVal.replace(/"/g, '&quot;')}" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs font-mono-numbers text-slate-900 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Target KB</label>
+                <input type="number" min="0" data-preset-kb="${p.id}" value="${targetKbVal}" ${p.hasTarget ? '' : 'disabled'} class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-indigo-500/30 bg-slate-50 dark:bg-[#111633] text-xs font-mono-numbers text-slate-900 dark:text-white disabled:opacity-50">
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSiteSettings() {
+      const cfg = cloudState.config || {};
+      const ann = cfg.announcement || {};
+      document.getElementById('annEnabled').checked = Boolean(ann.enabled);
+      document.getElementById('annBadge').value = ann.badge || 'NEW';
+      document.getElementById('annText').value = ann.text || '';
+      document.getElementById('annLinkText').value = ann.linkText || '';
+      document.getElementById('annLinkUrl').value = ann.linkUrl || '';
+      document.getElementById('defaultTheme').value = cfg.defaultTheme === 'light' ? 'light' : 'dark';
+      document.getElementById('defaultLang').value = ['en', 'hi', 'ta'].includes(cfg.defaultLang) ? cfg.defaultLang : 'en';
+    }
+
+    function renderAllSections() {
+      renderCloudStatus();
+      renderOverview();
+      renderToolsEditor();
+      renderPresetsEditor();
+      renderSiteSettings();
+      lucide.createIcons();
+    }
+
+    async function saveToolOverrides() {
+      const nextOverrides = { ...(cloudState.config.toolOverrides || {}) };
+      BASE_TOOLS.forEach(tool => {
+        const titleEl = document.querySelector(`[data-tool-title="${tool.id}"]`);
+        const descEl = document.querySelector(`[data-tool-desc="${tool.id}"]`);
+        const stateEl = document.querySelector(`[data-tool-state="${tool.id}"]`);
+        const favEl = document.querySelector(`[data-tool-fav="${tool.id}"]`);
+        if (titleEl && descEl && stateEl && favEl) {
+          nextOverrides[tool.id] = {
+            title: titleEl.value.trim() || tool.title,
+            desc: descEl.value.trim() || tool.desc,
+            state: stateEl.value,
+            isDefaultFav: favEl.checked
+          };
+        }
+      });
+      await publishConfigToCloudAndLocal({ ...cloudState.config, toolOverrides: nextOverrides }, 'Tool catalog published!');
+    }
+
+    async function savePresetOverrides() {
+      const nextPresets = { ...(cloudState.config.presetOverrides || {}) };
+      BASE_PRESETS.forEach(p => {
+        const enEl = document.querySelector(`[data-preset-enabled="${p.id}"]`);
+        const tEl = document.querySelector(`[data-preset-title="${p.id}"]`);
+        const bEl = document.querySelector(`[data-preset-badge="${p.id}"]`);
+        const kbEl = document.querySelector(`[data-preset-kb="${p.id}"]`);
+        if (enEl && tEl && bEl) {
+          nextPresets[p.id] = {
+            enabled: enEl.checked,
+            title: tEl.value.trim() || p.defaultTitle,
+            badge: bEl.value.trim() || p.defaultBadge,
+            targetKb: p.hasTarget ? (Number(kbEl?.value) || p.defaultTargetKb) : 0
+          };
+        }
+      });
+      await publishConfigToCloudAndLocal({ ...cloudState.config, presetOverrides: nextPresets }, 'India-First Presets published!');
+    }
+
+    async function saveSiteSettings() {
+      const nextConfig = {
+        ...cloudState.config,
+        announcement: {
+          enabled: document.getElementById('annEnabled').checked,
+          badge: document.getElementById('annBadge').value.trim() || 'NEW',
+          text: document.getElementById('annText').value.trim(),
+          linkText: document.getElementById('annLinkText').value.trim(),
+          linkUrl: document.getElementById('annLinkUrl').value.trim()
+        },
+        defaultTheme: document.getElementById('defaultTheme').value,
+        defaultLang: document.getElementById('defaultLang').value
+      };
+      await publishConfigToCloudAndLocal(nextConfig, 'Banner & site defaults published!');
+    }
+
+    async function resetCloudStats() {
+      try {
+        const data = await callCloudApi('resetStats');
+        applyServerDashboardData(data);
+      } catch (e) {
+        cloudState.stats = { totalOperations: 0, totalBytesProcessed: 0, totalBytesSaved: 0, pageViews: 0, toolUsage: {}, recentEvents: [] };
+        localStorage.removeItem('pdfly_local_stats');
+        renderAllSections();
+      }
+      showToast('Analytics counters reset');
+    }
+
+    async function configureKvStorage() {
+      const kvUrl = document.getElementById('kvUrlInput').value.trim();
+      const kvToken = document.getElementById('kvTokenInput').value.trim();
+      try {
+        const data = await callCloudApi('configureKv', { kvUrl, kvToken });
+        applyServerDashboardData(data);
+        showToast(kvUrl ? 'Connected to Upstash/Vercel KV!' : 'Switched to Serverless Memory mode');
+      } catch (err) {
+        showToast(err.message || 'KV connection failed', true);
+      }
+    }
+
+    async function changeAdminPasscode() {
+      const p1 = document.getElementById('newPasscodeInput').value.trim();
+      const p2 = document.getElementById('confirmPasscodeInput').value.trim();
+      if (p1.length < 4) return showToast('Passcode must be at least 4 characters', true);
+      if (p1 !== p2) return showToast('Passcodes do not match', true);
+
+      const newHash = await sha256Hex(p1);
+      localStorage.setItem('pdfly_admin_passcode_hash', newHash);
+      try {
+        await callCloudApi('changePasscode', { newPasscode: p1 });
+      } catch (e) {}
+      activePasscode = p1;
+      sessionStorage.setItem('pdfly_admin_passcode', p1);
+      document.getElementById('newPasscodeInput').value = '';
+      document.getElementById('confirmPasscodeInput').value = '';
+      showToast('Admin passcode updated!');
+    }
+
+    function exportConfigJson() {
+      const blob = new Blob([JSON.stringify(cloudState.config, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'pdfly-admin-config.json';
+      a.click();
+    }
+
+    function importConfigJson(file) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          await publishConfigToCloudAndLocal(parsed, 'Imported & published config JSON!');
+        } catch (err) {
+          showToast('Invalid JSON config file', true);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function resetAdminConfig() {
+      const defConfig = {
+        announcement: { enabled: false, badge: 'NEW', text: '100% Free & Local PDF Tools — Zero Server Uploads!', linkText: '', linkUrl: '' },
+        defaultTheme: 'dark',
+        defaultLang: 'en',
+        toolOverrides: {},
+        presetOverrides: {},
+        updatedAt: new Date().toISOString()
+      };
+      try {
+        const data = await callCloudApi('resetConfig');
+        applyServerDashboardData(data);
+      } catch (e) {
+        cloudState.config = defConfig;
+        localStorage.removeItem('pdfly_cloud_config');
+        renderAllSections();
+      }
+      showToast('Admin config reset to factory defaults');
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      html.classList.toggle('dark', !isDark);
+      localStorage.setItem('pdfly_theme', isDark ? 'light' : 'dark');
+      document.getElementById('themeIcon').setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+      lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (localStorage.getItem('pdfly_theme') === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').setAttribute('data-lucide', 'moon');
+      }
+      lucide.createIcons();
+
+      if (activePasscode) {
+        try {
+          const data = await callCloudApi('login');
+          applyServerDashboardData(data);
+          document.getElementById('loginOverlay').classList.add('hidden');
+        } catch (err) {
+          if (err.status === 401) {
+            logoutAdmin();
+          } else {
+            loadLocalFallbackState();
+            document.getElementById('loginOverlay').classList.add('hidden');
+            renderAllSections();
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

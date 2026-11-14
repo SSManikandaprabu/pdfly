@@ -213,11 +213,100 @@ async function testAll() {
   if (!mainScript.includes('function openShareModal') || !mainScript.includes('function shareOutputFile')) {
     throw new Error('Share workflow functions (openShareModal / shareOutputFile) missing from main script');
   }
+  if (!mainScript.includes('function syncWithCloudAdmin') || !mainScript.includes('function trackAdminOperation')) {
+    throw new Error('Cloud Admin sync functions (syncWithCloudAdmin / trackAdminOperation) missing from main script');
+  }
   console.log(
-    `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, share helpers & all ${expectedReadyTools.length} ready tools present`
+    `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, share & cloud sync helpers, and all ${expectedReadyTools.length} ready tools present`
   );
 
-  console.log('\n>>> ALL 13 ENGINE ACCEPTANCE TESTS (INCLUDING REAL ENCRYPTION & UI INTEGRITY) PASSED! <<<');
+  // 14. Verify admin.html HTML/JS integrity and api/admin.js serverless handler
+  const adminHtmlPath = nodePath.join(__dirname, 'admin.html');
+  const adminHtml = nodeFs.readFileSync(adminHtmlPath, 'utf8');
+  const strippedAdminHtml = adminHtml
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+  const adminOpenDivs = strippedAdminHtml.match(/<div(?=\s|>)/gi) || [];
+  const adminCloseDivs = strippedAdminHtml.match(/<\/div\s*>/gi) || [];
+  assert.strictEqual(
+    adminOpenDivs.length,
+    adminCloseDivs.length,
+    `Unbalanced <div> tags in admin.html: ${adminOpenDivs.length} opening vs ${adminCloseDivs.length} closing`
+  );
+
+  const adminScriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let adminScriptMatch;
+  let adminScriptCount = 0;
+  while ((adminScriptMatch = adminScriptRegex.exec(adminHtml)) !== null) {
+    const code = adminScriptMatch[1];
+    if (code.trim().length > 0) {
+      new nodeVm.Script(code);
+      adminScriptCount++;
+    }
+  }
+
+  const adminHandler = require('./api/admin.js');
+  const invokeMock = async (method, url, bodyObj = null) => {
+    const headers = {};
+    let statusCode = 200;
+    let payload = null;
+    const req = {
+      method,
+      url,
+      headers: { 'content-type': 'application/json' },
+      body: bodyObj
+    };
+    const res = {
+      setHeader(k, v) { headers[k.toLowerCase()] = v; },
+      status(code) { statusCode = code; return res; },
+      json(obj) { payload = obj; return res; },
+      end(str) {
+        if (str && !payload) {
+          try { payload = JSON.parse(str); } catch (e) { payload = str; }
+        }
+        return res;
+      }
+    };
+    await adminHandler(req, res);
+    return { statusCode, headers, body: payload };
+  };
+
+  const pubRes = await invokeMock('GET', '/api/admin?action=public&trackView=1');
+  assert.strictEqual(pubRes.statusCode, 200);
+  assert.strictEqual(pubRes.body.ok, true);
+
+  const trackRes = await invokeMock('GET', '/api/admin?action=track&tool=merge-pdf&bytes=4096&saved=1024&lang=en');
+  assert.strictEqual(trackRes.statusCode, 200);
+  assert.strictEqual(trackRes.body.ok, true);
+
+  const badAuthRes = await invokeMock('POST', '/api/admin', { action: 'login', passcode: 'wrongpass' });
+  assert.strictEqual(badAuthRes.statusCode, 401);
+  assert.strictEqual(badAuthRes.body.ok, false);
+
+  const loginRes = await invokeMock('POST', '/api/admin', { action: 'login', passcode: 'admin123' });
+  assert.strictEqual(loginRes.statusCode, 200);
+  assert.strictEqual(loginRes.body.ok, true);
+  assert.ok(loginRes.body.stats.totalOperations >= 1, 'Expected tracked operation count >= 1');
+
+  const saveRes = await invokeMock('POST', '/api/admin', {
+    action: 'saveConfig',
+    passcode: 'admin123',
+    config: { announcement: { enabled: true, badge: 'LIVE', text: 'Cloud Sync Verified' } }
+  });
+  assert.strictEqual(saveRes.statusCode, 200);
+  assert.strictEqual(saveRes.body.ok, true);
+  assert.strictEqual(saveRes.body.config.announcement.enabled, true);
+
+  // Clean up test mutations in serverless temp store
+  await invokeMock('POST', '/api/admin', { action: 'resetConfig', passcode: 'admin123' });
+  await invokeMock('POST', '/api/admin', { action: 'resetStats', passcode: 'admin123' });
+
+  console.log(
+    `✓ 14. Cloud Admin Panel verified: admin.html (${adminOpenDivs.length} balanced <div> pairs, ${adminScriptCount} valid scripts) & api/admin.js routes passed`
+  );
+
+  console.log('\n>>> ALL 14 ENGINE & CLOUD ADMIN ACCEPTANCE TESTS PASSED! <<<');
 }
 
 testAll().catch(err => {
