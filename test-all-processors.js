@@ -116,7 +116,105 @@ async function testAll() {
   }
   console.log('✓ 11. Security Audit Verified: Encrypted document strictly rejects unauthorized access');
 
-  console.log('\n>>> ALL 11 ENGINE ACCEPTANCE TESTS (INCLUDING REAL ENCRYPTION) PASSED! <<<');
+  // 12. Verify parsePageSequence preserves custom page order and reverse ranges
+  const nodeFs = require('fs');
+  const nodePath = require('path');
+  const nodeVm = require('vm');
+  const assert = require('assert');
+  const indexHtml = nodeFs.readFileSync(nodePath.join(__dirname, 'index.html'), 'utf8');
+
+  const fnStart = indexHtml.indexOf('function parsePageSequence(');
+  if (fnStart === -1) {
+    throw new Error('Could not find parsePageSequence in index.html');
+  }
+  let braceDepth = 0;
+  let fnEnd = -1;
+  let started = false;
+  for (let i = fnStart; i < indexHtml.length; i++) {
+    const ch = indexHtml[i];
+    if (ch === '{') {
+      braceDepth++;
+      started = true;
+    } else if (ch === '}') {
+      braceDepth--;
+      if (started && braceDepth === 0) {
+        fnEnd = i + 1;
+        break;
+      }
+    }
+  }
+  if (fnEnd === -1) {
+    throw new Error('Could not extract complete parsePageSequence function from index.html');
+  }
+  const seqSandbox = {};
+  nodeVm.runInNewContext(indexHtml.slice(fnStart, fnEnd), seqSandbox);
+  const seqCustom = Array.from(seqSandbox.parsePageSequence('3, 1, 2', 5));
+  assert.deepStrictEqual(seqCustom, [3, 1, 2], `Expected [3, 1, 2], got ${JSON.stringify(seqCustom)}`);
+  const seqReverse = Array.from(seqSandbox.parsePageSequence('4-2, 1', 5));
+  assert.deepStrictEqual(seqReverse, [4, 3, 2, 1], `Expected [4, 3, 2, 1], got ${JSON.stringify(seqReverse)}`);
+  console.log('✓ 12. parsePageSequence verified: preserves custom order [3, 1, 2] and reverse ranges [4, 3, 2, 1]');
+
+  // 13. Verify index.html <div> tag balance, all 16 ready tools in TOOL_CATALOG, and inline JS syntax
+  const strippedHtml = indexHtml
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+  const openDivMatches = strippedHtml.match(/<div(?=\s|>)/gi) || [];
+  const closeDivMatches = strippedHtml.match(/<\/div\s*>/gi) || [];
+  assert.strictEqual(
+    openDivMatches.length,
+    closeDivMatches.length,
+    `Unbalanced <div> tags in index.html: ${openDivMatches.length} opening vs ${closeDivMatches.length} closing`
+  );
+
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let scriptMatch;
+  let inlineScriptCount = 0;
+  let mainScript = '';
+  while ((scriptMatch = scriptRegex.exec(indexHtml)) !== null) {
+    const code = scriptMatch[1];
+    if (code.trim().length > 0) {
+      new nodeVm.Script(code);
+      inlineScriptCount++;
+      if (code.includes('TOOL_CATALOG')) {
+        mainScript = code;
+      }
+    }
+  }
+  if (!mainScript) {
+    throw new Error('Main application <script> containing TOOL_CATALOG was not found');
+  }
+
+  const expectedReadyTools = [
+    'merge-pdf',
+    'split-pdf',
+    'extract-pages',
+    'remove-pages',
+    'reorder-pages',
+    'rotate-pages',
+    'compress-pdf',
+    'compress-target',
+    'images-to-pdf',
+    'pdf-to-images',
+    'watermark-pdf',
+    'page-numbers',
+    'sign-pdf',
+    'extract-text',
+    'protect-pdf',
+    'unlock-pdf'
+  ];
+  for (const toolId of expectedReadyTools) {
+    const escapedId = toolId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const readyPattern = new RegExp(`id:\\s*'${escapedId}'[\\s\\S]{0,600}?state:\\s*'ready'`);
+    if (!readyPattern.test(mainScript)) {
+      throw new Error(`Expected tool '${toolId}' with state: 'ready' not found in TOOL_CATALOG`);
+    }
+  }
+  console.log(
+    `✓ 13. HTML/JS Integrity verified: ${openDivMatches.length} balanced <div> pairs, ${inlineScriptCount} valid inline scripts, and all ${expectedReadyTools.length} ready tools present`
+  );
+
+  console.log('\n>>> ALL 13 ENGINE ACCEPTANCE TESTS (INCLUDING REAL ENCRYPTION & UI INTEGRITY) PASSED! <<<');
 }
 
 testAll().catch(err => {
